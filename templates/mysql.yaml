@@ -1,0 +1,102 @@
+{{- if .Values.mysql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mysql") | nindent 4 }}
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+      protocol: TCP
+      name: mysql
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "mysql") | nindent 4 }}
+  # clusterIP: None # Para StatefulSet, se necessário
+---
+apiVersion: apps/v1
+kind: StatefulSet # Usar StatefulSet para banco de dados
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mysql") | nindent 4 }}
+spec:
+  serviceName: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "mysql") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "mysql") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
+      containers:
+        - name: mysql
+          image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.db.name | quote }}
+            - name: MYSQL_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-secrets
+                  key: MYSQL_PASSWORD
+            # Adicionar env para SS database (se necessário criar separadamente)
+            # - name: MYSQL_DATABASE_SS
+            #   value: "SS"
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+          # Liveness and Readiness probes são recomendadas para produção
+          # livenessProbe:
+          #   exec:
+          #     command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+          #   initialDelaySeconds: 30
+          #   periodSeconds: 10
+          #   timeoutSeconds: 5
+          # readinessProbe:
+          #   exec:
+          #     command: ["mysql", "-h", "127.0.0.1", "-u", "root", "-p$MYSQL_ROOT_PASSWORD", "-e", "SELECT 1"]
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 2
+          #   timeoutSeconds: 1
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-persistent-storage
+      spec:
+        accessModes: [ "{{ .Values.mysql.persistence.accessMode }}" ]
+        {{- if .Values.mysql.persistence.storageClass }}
+        storageClassName: "{{ .Values.mysql.persistence.storageClass }}"
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.mysql.persistence.size | quote }}
+{{- end }}
+

@@ -1,15 +1,10 @@
 apiVersion: v2
 name: archivematica
-description: A Helm chart for Kubernetes
+description: A Helm chart for deploying Archivematica on OpenShift
 
 # A chart can be either an 'application' or a 'library' chart.
-#
 # Application charts are a collection of templates that can be packaged into versioned archives
 # to be deployed.
-#
-# Library charts provide useful utilities or functions for the chart developer. They're included as
-# a dependency of application charts to inject those utilities and functions into the rendering
-# pipeline. Library charts do not define any templates and therefore cannot be deployed.
 type: application
 
 # This is the chart version. This version number should be incremented each time you make changes
@@ -21,4 +16,37 @@ version: 0.1.0
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "1.16.0"
+# Based on CERN chart and docs, targeting 1.13.x
+appVersion: "1.13.2"
+
+kubeVersion: ">= 1.18.0"
+
+keywords:
+  - archivematica
+  - digital preservation
+  - openshift
+
+home: https://www.archivematica.org/
+
+sources:
+  - https://github.com/artefactual/archivematica
+  - https://github.com/artefactual/archivematica-storage-service
+
+maintainers:
+  - name: Manus AI Agent
+
+# Dependencies will be added later if needed (e.g., for MySQL, Elasticsearch, Redis)
+# dependencies:
+#   - name: mysql
+#     version: "9.x.x"
+#     repository: "https://charts.bitnami.com/bitnami"
+#     condition: mysql.enabled
+#   - name: elasticsearch
+#     version: "7.x.x" # Archivematica 1.13 requires ES 7.x
+#     repository: "https://helm.elastic.co"
+#     condition: elasticsearch.enabled
+#   - name: redis
+#     version: "17.x.x"
+#     repository: "https://charts.bitnami.com/bitnami"
+#     condition: redis.enabled
+

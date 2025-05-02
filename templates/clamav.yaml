@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "clamav") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "clamav") | nindent 4 }}
+spec:
+  ports:
+    - port: 3310
+      targetPort: 3310
+      protocol: TCP
+      name: clamd
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "clamav") | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "clamav") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "clamav") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "clamav") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "clamav") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
+      # Init container to update ClamAV database on startup
+      initContainers:
+      - name: freshclam-init
+        image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+        imagePullPolicy: {{ .Values.clamav.image.pullPolicy }}
+        securityContext:
+          runAsUser: {{ .Values.general.user_uid }}
+          runAsGroup: {{ .Values.general.user_uid }}
+        command: ["freshclam"]
+        args:
+        - "--config-file=/etc/clamav/freshclam.conf"
+        - "--datadir=/var/lib/clamav"
+        - "--user={{ .Values.general.user_uid }}"
+        volumeMounts:
+        - name: clamav-db
+          mountPath: /var/lib/clamav
+        - name: clamav-log
+          mountPath: /var/log/clamav
+        - name: clamav-run
+          mountPath: /var/run/clamav
+        - name: freshclam-config-volume
+          mountPath: /etc/clamav/freshclam.conf
+          subPath: freshclam.conf
+      containers:
+        - name: clamd
+          image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+          imagePullPolicy: {{ .Values.clamav.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          command: ["clamd"]
+          args:
+          - "--config-file=/etc/clamav/clamd.conf"
+          ports:
+            - containerPort: 3310
+              name: clamd
+          envFrom:
+            - configMapRef:
+                name: {{ include "archivematica.fullname" . }}-env
+          volumeMounts:
+            - name: clamav-db
+              mountPath: /var/lib/clamav
+            - name: clamav-log
+              mountPath: /var/log/clamav
+            - name: clamav-run
+              mountPath: /var/run/clamav
+            - name: clamd-config-volume
+              mountPath: /etc/clamav/clamd.conf
+              subPath: clamd.conf
+          # Liveness and Readiness probes are recommended
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: 3310
+          #   initialDelaySeconds: 180 # Allow time for DB download
+          #   timeoutSeconds: 5
+          # readinessProbe:
+          #   exec:
+          #     command: ["clamdscan", "--version"]
+          #   initialDelaySeconds: 180
+          #   timeoutSeconds: 5
+        # Optional: Sidecar container for running freshclam periodically
+        - name: freshclam
+          image: "{{ .Values.clamav.image.repository }}:{{ .Values.clamav.image.tag }}"
+          imagePullPolicy: {{ .Values.clamav.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+          command: ["freshclam"]
+          args:
+          - "-d"
+          - "--config-file=/etc/clamav/freshclam.conf"
+          - "--datadir=/var/lib/clamav"
+          - "--user={{ .Values.general.user_uid }}"
+          volumeMounts:
+          - name: clamav-db
+            mountPath: /var/lib/clamav
+          - name: clamav-log
+            mountPath: /var/log/clamav
+          - name: clamav-run
+            mountPath: /var/run/clamav
+          - name: freshclam-config-volume
+            mountPath: /etc/clamav/freshclam.conf
+            subPath: freshclam.conf
+      volumes:
+        - name: clamav-db
+          {{- if .Values.clamav.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-clamav-db
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: clamav-log
+          emptyDir: {}
+        - name: clamav-run
+          emptyDir: {}
+        - name: clamd-config-volume
+          configMap:
+            name: {{ include "archivematica.fullname" . }}-clamd-conf
+            items:
+              - key: clamd.conf
+                path: clamd.conf
+        - name: freshclam-config-volume
+          configMap:
+            name: {{ include "archivematica.fullname" . }}-freshclam-conf
+            items:
+              - key: freshclam.conf
+                path: freshclam.conf
+---
+{{- if .Values.clamav.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-clamav-db
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.clamav.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.clamav.persistence.size }}
+  {{- if .Values.clamav.persistence.storageClass }}
+  storageClassName: {{ .Values.clamav.persistence.storageClass }}
+  {{- end }}
+{{- end }}
+

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "mcp-client") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mcp-client") | nindent 4 }}
+spec:
+  replicas: {{ .Values.mcp_client.replicas }}
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "mcp-client") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "mcp-client") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
+      containers:
+        - name: mcp-client
+          image: "{{ .Values.mcp_client.image.repository }}:{{ .Values.mcp_client.image.tag }}"
+          imagePullPolicy: {{ .Values.mcp_client.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          envFrom:
+            - configMapRef:
+                name: {{ include "archivematica.fullname" . }}-env
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            # Adicionar outras variáveis de ambiente específicas do MCP Client
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_CLIENTSCRIPTS
+              value: "analyze,characterize,clean_up_transfer_directory,compress_transfer,create_METS_manifest,create_SIP_from_transfer,create_transfer_backlog,extract_packages,normalize,remove_processed_transfer,scan_for_viruses,validate_transfer_compliance"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_PROCESSINGDIRECTORY
+              value: "/var/archivematica/sharedDirectory/watchedDirectories/activeProcessing"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_REJECTEDDIRECTORY
+              value: "/var/archivematica/sharedDirectory/watchedDirectories/rejected"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_TSUPLOADDIRECTORY
+              value: "/var/archivematica/sharedDirectory/watchedDirectories/upload"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_WAITINGFORUPLOADDIRECTORY
+              value: "/var/archivematica/sharedDirectory/watchedDirectories/waitingForUpload"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_EXTRACTPACKAGES_EXTRACTCOMMAND
+              value: "7za x -y -o%d %f"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDHOST
+              value: "localhost" # Assumes ClamAV runs in the same pod or via localhost service
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDPORT
+              value: "3310"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSCOMMAND
+              value: "/usr/share/fits/fits.sh -i %file% -o %output%"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSURL
+              value: "http://{{ include "archivematica.component.fullname" (list . "fits") }}:2113/examine" # Assuming FITS runs as a separate service
+          volumeMounts:
+            # Montar volumes compartilhados necessários
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+            - name: transfer-share
+              mountPath: /home/transfer
+            - name: staging-data
+              mountPath: /var/archivematica/storage_service # Verificar caminho correto
+            - name: location-data
+              mountPath: /home # Verificar caminho correto
+            - name: storage-share
+              mountPath: /data/storage # Verificar caminho correto
+          resources:
+            {{- toYaml .Values.mcp_client.resources | nindent 12 }}
+          # Liveness and Readiness probes são recomendadas
+      volumes:
+        # Definir volumes compartilhados
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+        - name: transfer-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-transfer-share
+        - name: staging-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-staging-data
+        - name: location-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-location-data
+        - name: storage-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-storage-share
+

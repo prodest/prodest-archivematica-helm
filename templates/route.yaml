@@ -1,0 +1,48 @@
+{{- if .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "dashboard") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "dashboard") | nindent 4 }}
+spec:
+  host: {{ .Values.route.hostname }}
+  to:
+    kind: Service
+    name: {{ include "archivematica.component.fullname" (list . "dashboard") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- if .Values.route.tls }}
+  tls:
+    termination: edge
+    # Optional: specify insecureEdgeTerminationPolicy if needed
+    # insecureEdgeTerminationPolicy: Redirect
+  {{- end }}
+  wildcardPolicy: None
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "storage-service") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "storage-service") | nindent 4 }}
+spec:
+  host: {{ .Values.route.ss_hostname }}
+  to:
+    kind: Service
+    name: {{ include "archivematica.component.fullname" (list . "storage-service") }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- if .Values.route.tls }}
+  tls:
+    termination: edge
+    # Optional: specify insecureEdgeTerminationPolicy if needed
+    # insecureEdgeTerminationPolicy: Redirect
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+

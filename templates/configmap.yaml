@@ -1,0 +1,100 @@
+# ConfigMap para variáveis de ambiente comuns e configurações
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "archivematica.fullname" . }}-env
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+data:
+  # URLs de conexão com banco de dados (usando nome do serviço interno)
+  SS_DB_URL: {{ .Values.mysql.ss_db_url | quote }}
+  # Senhas e chaves de API devem ser gerenciadas via Secrets
+  
+  # Configurações do Elasticsearch
+  ARCHIVEMATICA_DASHBOARD_DASHBOARD_ELASTICSEARCH_SERVER: "{{ include "archivematica.fullname" . }}-elasticsearch:9200"
+  
+  # Configurações do Gearman
+  ARCHIVEMATICA_DASHBOARD_DASHBOARD_GEARMAN_SERVER: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+  ARCHIVEMATICA_MCPSERVER_MCPSERVER_MCPARCHIVEMATICASERVER: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+  
+  # Configurações do ClamAV
+  CLAMAV_MAX_FILE_SIZE: {{ .Values.clamav.max_file_size | quote }}
+  CLAMAV_MAX_SCAN_SIZE: {{ .Values.clamav.max_scan_size | quote }}
+  CLAMAV_MAX_STREAM_LENGTH: {{ .Values.clamav.max_stream_length | quote }}
+  
+  # Outras configurações (adicionar conforme necessário)
+  DJANGO_SETTINGS_MODULE_SS: "storage_service.settings.local"
+  DJANGO_SETTINGS_MODULE_DASHBOARD: "settings.local"
+  DJANGO_SETTINGS_MODULE_MCPSERVER: "settings.common"
+  FORWARDED_ALLOW_IPS: "*"
+  SS_GNUPG_HOME_PATH: "/var/archivematica/storage_service/.gnupg"
+  
+  # Configurações Gunicorn (exemplo para Storage Service)
+  SS_GUNICORN_BIND: "0.0.0.0:8002"
+  SS_GUNICORN_ACCESSLOG: "/dev/null"
+  SS_GUNICORN_RELOAD: "true"
+  SS_GUNICORN_RELOAD_ENGINE: "auto"
+  SS_GUNICORN_USER: {{ .Values.general.user_uid | quote }}
+  SS_GUNICORN_GROUP: {{ .Values.general.user_uid | quote }}
+  SS_GUNICORN_LOGLEVEL: "info"
+  
+  # Configurações Gunicorn (exemplo para Dashboard)
+  AM_GUNICORN_BIND: "0.0.0.0:8001"
+  AM_GUNICORN_ACCESSLOG: "/dev/null"
+  AM_GUNICORN_RELOAD: "true"
+  AM_GUNICORN_RELOAD_ENGINE: "auto"
+  AM_GUNICORN_USER: {{ .Values.general.user_uid | quote }}
+  AM_GUNICORN_GROUP: {{ .Values.general.user_uid | quote }}
+  AM_GUNICORN_LOGLEVEL: "info"
+  AM_GUNICORN_WORKERS: "1"
+  AM_GUNICORN_PROC_NAME: "archivematica-dashboard"
+  AM_GUNICORN_CHDIR: "/src/archivematicaCommon/lib/"
+
+---
+# ConfigMap específico para ClamAV (se necessário, exemplo baseado no CERN chart)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "archivematica.fullname" . }}-clamd-conf
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+data:
+  clamd.conf: |
+    # Configurações do clamd.conf
+    LogFile /var/log/clamav/clamd.log
+    LogTime yes
+    PidFile /var/run/clamav/clamd.pid
+    LocalSocket /var/run/clamav/clamd.sock
+    FixStaleSocket yes
+    User {{ .Values.general.user_uid }}
+    ScanPDF yes
+    ScanHTML yes
+    ScanMail yes
+    DetectPUA yes
+    MaxFileSize {{ .Values.clamav.max_file_size }}M
+    MaxScanSize {{ .Values.clamav.max_scan_size }}M
+    StreamMaxLength {{ .Values.clamav.max_stream_length }}M
+    # Adicione outras configurações conforme necessário
+
+---
+# ConfigMap específico para Freshclam (se necessário, exemplo baseado no CERN chart)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "archivematica.fullname" . }}-freshclam-conf
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+data:
+  freshclam.conf: |
+    # Configurações do freshclam.conf
+    DatabaseDirectory /var/lib/clamav
+    UpdateLogFile /var/log/clamav/freshclam.log
+    LogTime yes
+    PidFile /var/run/clamav/freshclam.pid
+    DatabaseOwner {{ .Values.general.user_uid }}
+    Checks 24
+    # Adicione outras configurações conforme necessário
+

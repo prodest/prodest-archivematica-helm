@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "mcp-server") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mcp-server") | nindent 4 }}
+spec:
+  # MCP Server não precisa ser exposto externamente, apenas internamente para o Dashboard/Clients
+  type: ClusterIP
+  ports:
+    - port: 8000 # Porta padrão do MCP Server (verificar documentação)
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "mcp-server") | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "mcp-server") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mcp-server") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "mcp-server") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "mcp-server") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
+      containers:
+        - name: mcp-server
+          image: "{{ .Values.mcp_server.image.repository }}:{{ .Values.mcp_server.image.tag }}"
+          imagePullPolicy: {{ .Values.mcp_server.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          ports:
+            - containerPort: 8000 # Porta interna do MCP Server
+              name: http
+          envFrom:
+            - configMapRef:
+                name: {{ include "archivematica.fullname" . }}-env
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            # Override DJANGO_SETTINGS_MODULE se necessário
+            - name: DJANGO_SETTINGS_MODULE
+              value: {{ .Values.mcp_server.django_settings_module | default "settings.common" | quote }}
+            # Adicionar outras variáveis de ambiente específicas do MCP Server
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_HOST
+              value: {{ include "archivematica.component.fullname" (list . "mysql") | quote }}
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_DATABASE
+              value: {{ .Values.mysql.db.name | quote }}
+            - name: ARCHIVEMATICA_MCPSERVER_SEARCH_ENABLED
+              value: "true" # Habilitar se Elasticsearch estiver habilitado
+          volumeMounts:
+            # Montar volumes compartilhados necessários (pipeline, transfer, etc.)
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+            - name: transfer-share
+              mountPath: /home/transfer
+          resources:
+            {{- toYaml .Values.mcp_server.resources | nindent 12 }}
+          # Liveness and Readiness probes são recomendadas
+      volumes:
+        # Definir volumes compartilhados
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+        - name: transfer-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-transfer-share
+

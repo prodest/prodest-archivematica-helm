@@ -1,123 +1,221 @@
-# Default values for archivematica.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Valores padrão para o Helm chart do Archivematica para OpenShift
+# Este é um arquivo YAML formatado
+# Declare variáveis a serem passadas para os templates
 
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 1
+# Configurações gerais
+general:
+  # UID do usuário para execução dos contêineres
+  # Escolha este valor com base no intervalo permitido do seu projeto OpenShift
+  # (verifique a anotação openshift.io/sa.scc.uid-range)
+  user_uid: "1000680000"
 
-# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
-image:
-  repository: nginx
-  # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  # Namespace para instalação (será substituído pelo namespace de lançamento)
+  namespace: archivematica
 
-# This is for the secretes for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-imagePullSecrets: []
-# This is to override the chart name.
-nameOverride: ""
-fullnameOverride: ""
+# Configurações de imagem e persistência para o Storage Service
+archivematica_storage_service:
+  image:
+    repository: artefactual/archivematica-storage-service
+    tag: "0.19.0"
+    pullPolicy: IfNotPresent
 
-#This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
 
-# This is for setting Kubernetes Annotations to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/ 
-podAnnotations: {}
-# This is for setting Kubernetes Labels to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
-podLabels: {}
+# Configurações de imagem para o Dashboard
+archivematica_dashboard:
+  image:
+    repository: artefactual/archivematica-dashboard
+    tag: "1.13.2"
+    pullPolicy: IfNotPresent
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# Configurações de imagem para o MCP Client
+mcp_client:
+  image:
+    repository: artefactual/archivematica-mcp-client
+    tag: "1.13.2"
+    pullPolicy: IfNotPresent
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  # Número de réplicas do MCP Client
+  replicas: 2
 
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
-service:
-  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
+  # Recursos para o MCP Client
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2048Mi"
+      cpu: "1000m"
 
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+# Configurações de imagem para o MCP Server
+mcp_server:
+  image:
+    repository: artefactual/archivematica-mcp-server
+    tag: "1.13.2"
+    pullPolicy: IfNotPresent
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  # Recursos para o MCP Server
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1024Mi"
+      cpu: "500m"
 
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-livenessProbe:
-  httpGet:
-    path: /
-    port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
+# Configurações para o MySQL
+mysql:
+  enabled: true
+  image:
+    repository: mysql
+    tag: "5.7"
+    pullPolicy: IfNotPresent
 
-#This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  # Configurações do banco de dados
+  db:
+    name: "archivematica_db"
+    user: "archivematica"
+    password: "archivematica"
+    rootPassword: "root_password"
 
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
+  # URL de conexão para o Storage Service
+  ss_db_url: "mysql://archivematica:archivematica@mysql:3306/SS"
 
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
+  # Persistência para o MySQL
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
 
-nodeSelector: {}
+# Configurações para o ClamAV
+clamav:
+  image:
+    repository: artefactual/clamav
+    tag: "latest"
+    pullPolicy: IfNotPresent
 
-tolerations: []
+  # Configurações do ClamAV
+  max_file_size: "2048"
+  max_scan_size: "2048"
+  max_stream_length: "2048"
 
-affinity: {}
+  # Persistência para o ClamAV
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+# Configurações para o Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "6.0"
+    pullPolicy: IfNotPresent
+
+  # Persistência para o Redis
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+# Configurações para o Elasticsearch
+elasticsearch:
+  enabled: true
+  image:
+    repository: elasticsearch
+    tag: "7.17.0"
+    pullPolicy: IfNotPresent
+
+  # Persistência para o Elasticsearch
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+# Configurações para o Gearman
+gearmand:
+  image:
+    repository: artefactual/gearmand
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # Configurações do Gearman
+  queue_type: "redis"
+  redis_server: "redis"
+  redis_port: 6379
+
+# Configurações para o FITS
+fits:
+  image:
+    repository: artefactual/fits-ngserver
+    tag: "0.8.4"
+    pullPolicy: IfNotPresent
+
+# Configurações de rota para OpenShift
+route:
+  enabled: true
+  tls: true
+  hostname: "archivematica.example.com"
+  ss_hostname: "archivematica-ss.example.com"
+
+# Configurações de segurança para OpenShift
+security:
+  # ServiceAccount para os pods
+  serviceAccount:
+    create: true
+    name: "archivematica"
+
+  # SecurityContextConstraints para OpenShift
+  scc:
+    # Usar SCC existente ou criar uma personalizada
+    # Valores possíveis: "restricted", "nonroot", "anyuid", "custom"
+    use: "anyuid"
+
+    # Nome da SCC personalizada (se use: "custom")
+    custom_name: "archivematica-scc"
+
+# Configurações de volumes compartilhados
+shared_volumes:
+  # Volume para dados do pipeline
+  pipeline_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para dados de staging
+  staging_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para dados de localização
+  location_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para compartilhamento de transferência
+  transfer_share:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para compartilhamento de armazenamento
+  storage_share:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany

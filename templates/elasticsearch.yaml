@@ -1,0 +1,97 @@
+{{- if .Values.elasticsearch.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "elasticsearch") | nindent 4 }}
+spec:
+  ports:
+    - port: 9200
+      targetPort: 9200
+      protocol: TCP
+      name: http
+    - port: 9300
+      targetPort: 9300
+      protocol: TCP
+      name: transport
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "elasticsearch") | nindent 4 }}
+  # clusterIP: None # Para StatefulSet
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "elasticsearch") | nindent 4 }}
+spec:
+  serviceName: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "elasticsearch") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "elasticsearch") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      # Elasticsearch requer configurações específicas de vm.max_map_count no host ou um initContainer privilegiado
+      # OpenShift pode restringir initContainers privilegiados. Verifique a SCC.
+      # Alternativa: Definir vm.max_map_count via MachineConfig ou similar.
+      initContainers:
+      - name: increase-vm-max-map-count
+        image: busybox # Ou uma imagem base do UBI
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true # Requer SCC apropriada (e.g., privileged ou customizada)
+          runAsUser: 0
+      containers:
+        - name: elasticsearch
+          image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"
+          imagePullPolicy: {{ .Values.elasticsearch.image.pullPolicy }}
+          # SecurityContext para Elasticsearch pode precisar ser menos restritivo dependendo da imagem
+          # A imagem oficial pode não rodar bem com UIDs arbitrários sem modificações
+          securityContext:
+            # runAsUser: {{ .Values.general.user_uid }} # Pode causar problemas
+            # runAsGroup: {{ .Values.general.user_uid }}
+            capabilities:
+              add:
+              - IPC_LOCK
+              - SYS_RESOURCE
+          ports:
+            - containerPort: 9200
+              name: http
+            - containerPort: 9300
+              name: transport
+          env:
+            - name: discovery.type
+              value: "single-node"
+            - name: ES_JAVA_OPTS
+              value: "-Xms512m -Xmx512m" # Ajustar conforme necessário
+            # Adicionar outras configurações de env conforme necessário
+          volumeMounts:
+            - name: elasticsearch-persistent-storage
+              mountPath: /usr/share/elasticsearch/data
+          # Liveness and Readiness probes são recomendadas
+          # readinessProbe:
+          #   httpGet:
+          #     path: /_cluster/health?local=true
+          #     port: 9200
+          #   initialDelaySeconds: 20
+  volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-persistent-storage
+      spec:
+        accessModes: [ "{{ .Values.elasticsearch.persistence.accessMode }}" ]
+        {{- if .Values.elasticsearch.persistence.storageClass }}
+        storageClassName: "{{ .Values.elasticsearch.persistence.storageClass }}"
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.elasticsearch.persistence.size | quote }}
+{{- end }}
+

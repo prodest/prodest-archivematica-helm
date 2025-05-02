@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "gearmand") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "gearmand") | nindent 4 }}
+spec:
+  ports:
+    - port: 4730
+      targetPort: 4730
+      protocol: TCP
+      name: gearmand
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "gearmand") | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.component.fullname" (list . "gearmand") }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "gearmand") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "gearmand") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "gearmand") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
+      containers:
+        - name: gearmand
+          image: "{{ .Values.gearmand.image.repository }}:{{ .Values.gearmand.image.tag }}"
+          imagePullPolicy: {{ .Values.gearmand.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          ports:
+            - containerPort: 4730
+              name: gearmand
+          env:
+            - name: GEARMAND_QUEUE_TYPE
+              value: {{ .Values.gearmand.queue_type | quote }}
+            {{- if eq .Values.gearmand.queue_type "redis" }}
+            - name: GEARMAND_REDIS_SERVER
+              value: {{ include "archivematica.component.fullname" (list . "redis") | quote }}
+            - name: GEARMAND_REDIS_PORT
+              value: {{ .Values.gearmand.redis_port | quote }}
+            {{- end }}
+          # Liveness and Readiness probes são recomendadas
+          # livenessProbe:
+          #   tcpSocket:
+          #     port: 4730
+          #   initialDelaySeconds: 30
+          #   timeoutSeconds: 5
+          # readinessProbe:
+          #   tcpSocket:
+          #     port: 4730
+          #   initialDelaySeconds: 5
+          #   timeoutSeconds: 1

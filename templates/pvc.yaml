@@ -1,0 +1,95 @@
+{{- if .Values.shared_volumes.pipeline_data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-pipeline-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.shared_volumes.pipeline_data.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.shared_volumes.pipeline_data.size }}
+  {{- if .Values.shared_volumes.pipeline_data.storageClass }}
+  storageClassName: {{ .Values.shared_volumes.pipeline_data.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.shared_volumes.staging_data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-staging-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.shared_volumes.staging_data.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.shared_volumes.staging_data.size }}
+  {{- if .Values.shared_volumes.staging_data.storageClass }}
+  storageClassName: {{ .Values.shared_volumes.staging_data.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.shared_volumes.location_data.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-location-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.shared_volumes.location_data.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.shared_volumes.location_data.size }}
+  {{- if .Values.shared_volumes.location_data.storageClass }}
+  storageClassName: {{ .Values.shared_volumes.location_data.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.shared_volumes.transfer_share.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-transfer-share
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.shared_volumes.transfer_share.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.shared_volumes.transfer_share.size }}
+  {{- if .Values.shared_volumes.transfer_share.storageClass }}
+  storageClassName: {{ .Values.shared_volumes.transfer_share.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.shared_volumes.storage_share.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "archivematica.fullname" . }}-storage-share
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.shared_volumes.storage_share.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.shared_volumes.storage_share.size }}
+  {{- if .Values.shared_volumes.storage_share.storageClass }}
+  storageClassName: {{ .Values.shared_volumes.storage_share.storageClass }}
+  {{- end }}
+{{- end }}
+
