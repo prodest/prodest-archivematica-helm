@@ -7,16 +7,16 @@ general:
   # UID do usuário para execução dos contêineres
   # Escolha este valor com base no intervalo permitido do seu projeto OpenShift
   # (verifique a anotação openshift.io/sa.scc.uid-range)
-  user_uid: "1000680000"
+  user_uid: "1000850000"
 
   # Namespace para instalação (será substituído pelo namespace de lançamento)
-  namespace: archivematica
+  namespace: npr-prodest-pds
 
 # Configurações de imagem e persistência para o Storage Service
 archivematica_storage_service:
   image:
-    repository: artefactual/archivematica-storage-service
-    tag: "0.19.0"
+    repository: registry.prodest.es.gov.br/devops/archivematica-storage-service
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   persistence:
@@ -28,15 +28,15 @@ archivematica_storage_service:
 # Configurações de imagem para o Dashboard
 archivematica_dashboard:
   image:
-    repository: artefactual/archivematica-dashboard
-    tag: "1.13.2"
+    repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
+    tag: "latest"
     pullPolicy: IfNotPresent
 
 # Configurações de imagem para o MCP Client
 mcp_client:
   image:
-    repository: artefactual/archivematica-mcp-client
-    tag: "1.13.2"
+    repository: registry.prodest.es.gov.br/devops/archivematica-mcp-client
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   # Número de réplicas do MCP Client
@@ -54,8 +54,8 @@ mcp_client:
 # Configurações de imagem para o MCP Server
 mcp_server:
   image:
-    repository: artefactual/archivematica-mcp-server
-    tag: "1.13.2"
+    repository: registry.prodest.es.gov.br/devops/archivematica-mcp-server
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   # Recursos para o MCP Server
@@ -71,8 +71,8 @@ mcp_server:
 mysql:
   enabled: true
   image:
-    repository: mysql
-    tag: "5.7"
+    repository: percona #TODO: VERIFICAR PARA UTILIZAR O PERCONA:8.0
+    tag: "8"
     pullPolicy: IfNotPresent
 
   # Configurações do banco de dados
@@ -128,7 +128,7 @@ redis:
 
 # Configurações para o Elasticsearch
 elasticsearch:
-  enabled: true
+  enabled: false
   image:
     repository: elasticsearch
     tag: "7.17.0"
@@ -137,7 +137,7 @@ elasticsearch:
   # Persistência para o Elasticsearch
   persistence:
     enabled: true
-    size: 10Gi
+    size: 2Gi
     storageClass: ""
     accessMode: ReadWriteOnce
 
@@ -145,7 +145,7 @@ elasticsearch:
 gearmand:
   image:
     repository: artefactual/gearmand
-    tag: "latest"
+    tag: "1.1.18-alpine"
     pullPolicy: IfNotPresent
 
   # Configurações do Gearman
@@ -164,8 +164,8 @@ fits:
 route:
   enabled: true
   tls: true
-  hostname: "archivematica.example.com"
-  ss_hostname: "archivematica-ss.example.com"
+  hostname: "archivematica.k8s-sbx.es.gov.br"
+  ss_hostname: "archivematica-dash.k8s-sbx.es.gov.br"
 
 # Configurações de segurança para OpenShift
 security:
