@@ -1,7 +1,8 @@
+{{- if .Values.mcp_client.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "mcp-client") }}
+  name: {{ include "archivematica.fullname" . }}-mcp-client
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "mcp-client") | nindent 4 }}
@@ -57,7 +58,7 @@ spec:
             - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSCOMMAND
               value: "/usr/share/fits/fits.sh -i %file% -o %output%"
             - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSURL
-              value: "http://{{ include "archivematica.component.fullname" (list . "fits") }}:2113/examine" # Assuming FITS runs as a separate service
+              value: "http://{{ include "archivematica.fullname" . }}-fits:2113/examine" # Assuming FITS runs as a separate service
           volumeMounts:
             # Montar volumes compartilhados necessários
             - name: pipeline-data
@@ -90,4 +91,4 @@ spec:
         - name: storage-share
           persistentVolumeClaim:
             claimName: {{ include "archivematica.fullname" . }}-storage-share
-
+{{- end }}

@@ -1,7 +1,8 @@
+{{- if .Values.archivematica_dashboard.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "dashboard") }}
+  name: {{ include "archivematica.fullname" . }}-dashboard
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "dashboard") | nindent 4 }}
@@ -17,7 +18,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "dashboard") }}
+  name: {{ include "archivematica.fullname" . }}-dashboard
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "dashboard") | nindent 4 }}
@@ -61,7 +62,7 @@ spec:
             - name: DJANGO_SETTINGS_MODULE
               value: "settings.local"
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
-              value: {{ include "archivematica.component.fullname" (list . "mysql") | quote }}
+              value: "{{ include "archivematica.fullname" . }}-mysql"
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_DATABASE
               value: {{ .Values.mysql.db.name | quote }}
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
@@ -72,9 +73,9 @@ spec:
                   name: {{ include "archivematica.fullname" . }}-secrets
                   key: MYSQL_PASSWORD
             - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_ELASTICSEARCH_SERVER
-              value: "{{ include "archivematica.component.fullname" (list . "elasticsearch") }}:9200"
+              value: "{{ include "archivematica.fullname" . }}-elasticsearch:9200"
             - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_GEARMAN_SERVER
-              value: "{{ include "archivematica.component.fullname" (list . "gearmand") }}:4730"
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
           volumeMounts:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory
@@ -100,3 +101,4 @@ spec:
         - name: transfer-share
           persistentVolumeClaim:
             claimName: {{ include "archivematica.fullname" . }}-transfer-share
+{{- end }}

@@ -1,7 +1,8 @@
+{{- if .Values.gearmand.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "gearmand") }}
+  name: {{ include "archivematica.fullname" . }}-gearmand
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "gearmand") | nindent 4 }}
@@ -17,7 +18,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "gearmand") }}
+  name: {{ include "archivematica.fullname" . }}-gearmand
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "gearmand") | nindent 4 }}
@@ -55,7 +56,7 @@ spec:
               value: {{ .Values.gearmand.queue_type | quote }}
             {{- if eq .Values.gearmand.queue_type "redis" }}
             - name: GEARMAND_REDIS_SERVER
-              value: {{ include "archivematica.component.fullname" (list . "redis") | quote }}
+              value: "{{ include "archivematica.fullname" . }}-redis"
             - name: GEARMAND_REDIS_PORT
               value: {{ .Values.gearmand.redis_port | quote }}
             {{- end }}
@@ -70,3 +71,4 @@ spec:
           #     port: 4730
           #   initialDelaySeconds: 5
           #   timeoutSeconds: 1
+{{- end }}

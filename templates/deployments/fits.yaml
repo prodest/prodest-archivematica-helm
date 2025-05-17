@@ -1,7 +1,8 @@
+{{- if .Values.fits.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "fits") }}
+  name: {{ include "archivematica.fullname" . }}-fits
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "fits") | nindent 4 }}
@@ -17,7 +18,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "fits") }}
+  name: {{ include "archivematica.fullname" . }}-fits
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "fits") | nindent 4 }}
@@ -70,3 +71,4 @@ spec:
         - name: pipeline-data
           persistentVolumeClaim:
             claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+{{- end }}

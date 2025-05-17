@@ -14,6 +14,7 @@ general:
 
 # Configurações de imagem e persistência para o Storage Service
 archivematica_storage_service:
+  enabled: true
   image:
     repository: registry.prodest.es.gov.br/devops/archivematica-storage-service
     tag: "latest"
@@ -27,6 +28,7 @@ archivematica_storage_service:
 
 # Configurações de imagem para o Dashboard
 archivematica_dashboard:
+  enabled: true
   image:
     repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
     tag: "latest"
@@ -34,13 +36,14 @@ archivematica_dashboard:
 
 # Configurações de imagem para o MCP Client
 mcp_client:
+  enabled: true
   image:
     repository: registry.prodest.es.gov.br/devops/archivematica-mcp-client
     tag: "latest"
     pullPolicy: IfNotPresent
 
   # Número de réplicas do MCP Client
-  replicas: 2
+  replicas: 1
 
   # Recursos para o MCP Client
   resources:
@@ -53,6 +56,7 @@ mcp_client:
 
 # Configurações de imagem para o MCP Server
 mcp_server:
+  enabled: true
   image:
     repository: registry.prodest.es.gov.br/devops/archivematica-mcp-server
     tag: "latest"
@@ -94,6 +98,7 @@ mysql:
 
 # Configurações para o ClamAV
 clamav:
+  enabled: true
   image:
     repository: artefactual/clamav
     tag: "latest"
@@ -143,6 +148,7 @@ elasticsearch:
 
 # Configurações para o Gearman
 gearmand:
+  enabled: true
   image:
     repository: artefactual/gearmand
     tag: "1.1.18-alpine"
@@ -155,6 +161,7 @@ gearmand:
 
 # Configurações para o FITS
 fits:
+  enabled: true
   image:
     repository: artefactual/fits-ngserver
     tag: "0.8.4"

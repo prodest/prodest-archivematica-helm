@@ -33,7 +33,7 @@ sources:
   - https://github.com/artefactual/archivematica-storage-service
 
 maintainers:
-  - name: Manus AI Agent
+  - name: Daniel Carvalho
 
 # Dependencies will be added later if needed (e.g., for MySQL, Elasticsearch, Redis)
 # dependencies:

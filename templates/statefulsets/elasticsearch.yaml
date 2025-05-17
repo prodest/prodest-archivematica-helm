@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  name: {{ include "archivematica.fullname" . }}-elasticsearch
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "elasticsearch") | nindent 4 }}
@@ -23,12 +23,12 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  name: {{ include "archivematica.fullname" . }}-elasticsearch
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "elasticsearch") | nindent 4 }}
 spec:
-  serviceName: {{ include "archivematica.component.fullname" (list . "elasticsearch") }}
+  serviceName: {{ include "archivematica.fullname" . }}-elasticsearch
   replicas: 1
   selector:
     matchLabels:

@@ -1,7 +1,8 @@
+{{- if .Values.archivematica_storage_service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "storage-service") }}
+  name: {{ include "archivematica.fullname" . }}-storage-service
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "storage-service") | nindent 4 }}
@@ -17,7 +18,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "storage-service") }}
+  name: {{ include "archivematica.fullname" . }}-storage-service
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "storage-service") | nindent 4 }}
@@ -126,3 +127,4 @@ spec:
         - name: storage-share
           persistentVolumeClaim:
             claimName: {{ include "archivematica.fullname" . }}-storage-share
+{{- end }}

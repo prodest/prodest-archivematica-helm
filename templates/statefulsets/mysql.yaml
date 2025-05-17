@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  name: {{ include "archivematica.fullname" . }}-mysql
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "mysql") | nindent 4 }}
@@ -19,12 +19,12 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet # Usar StatefulSet para banco de dados
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  name: {{ include "archivematica.fullname" . }}-mysql
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "mysql") | nindent 4 }}
 spec:
-  serviceName: {{ include "archivematica.component.fullname" (list . "mysql") }}
+  serviceName: {{ include "archivematica.fullname" . }}-mysql
   replicas: 1
   selector:
     matchLabels:
@@ -35,21 +35,21 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "mysql") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
-      securityContext:
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
+      # securityContext:
+      #   fsGroup: {{ .Values.general.user_uid }}
+      #   runAsUser: {{ .Values.general.user_uid }}
+      #   runAsGroup: {{ .Values.general.user_uid }}
       containers:
         - name: mysql
           image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
           imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
+          # securityContext:
+          #   runAsUser: {{ .Values.general.user_uid }}
+          #   runAsGroup: {{ .Values.general.user_uid }}
+          #   allowPrivilegeEscalation: false
+          #   capabilities:
+          #     drop:
+          #     - ALL
           ports:
             - containerPort: 3306
               name: mysql

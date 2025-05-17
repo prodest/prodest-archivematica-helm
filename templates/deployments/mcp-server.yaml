@@ -1,7 +1,8 @@
+{{- if .Values.mcp_server.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "mcp-server") }}
+  name: {{ include "archivematica.fullname" . }}-mcp-server
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "mcp-server") | nindent 4 }}
@@ -19,7 +20,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "archivematica.component.fullname" (list . "mcp-server") }}
+  name: {{ include "archivematica.fullname" . }}-mcp-server
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.component.labels" (list . "mcp-server") | nindent 4 }}
@@ -70,7 +71,7 @@ spec:
                   name: {{ include "archivematica.fullname" . }}-secrets
                   key: MYSQL_PASSWORD
             - name: ARCHIVEMATICA_MCPSERVER_CLIENT_HOST
-              value: {{ include "archivematica.component.fullname" (list . "mysql") | quote }}
+              value: "{{ include "archivematica.fullname" . }}-mysql"
             - name: ARCHIVEMATICA_MCPSERVER_CLIENT_DATABASE
               value: {{ .Values.mysql.db.name | quote }}
             - name: ARCHIVEMATICA_MCPSERVER_SEARCH_ENABLED
@@ -93,3 +94,4 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "archivematica.fullname" . }}-transfer-share
 
+{{- end }}
