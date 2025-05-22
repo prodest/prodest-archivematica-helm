@@ -32,22 +32,11 @@ spec:
       labels:
         {{- include "archivematica.component.selectorLabels" (list . "gearmand") | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
-      securityContext:
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
+      serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
       containers:
         - name: gearmand
           image: "{{ .Values.gearmand.image.repository }}:{{ .Values.gearmand.image.tag }}"
           imagePullPolicy: {{ .Values.gearmand.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           ports:
             - containerPort: 4730
               name: gearmand
