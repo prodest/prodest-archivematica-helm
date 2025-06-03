@@ -89,26 +89,25 @@ archivematica-helm-chart/
   Chart.yaml
   values.yaml
   templates/
+    deployments/
+        am-dashboard.yaml       # Deployment para o Dashboard
+        am-storage-service.yaml # Deployment para o Storage Service
+        mcp-server.yaml         # Deployment para o MCP Server
+        mcp-client.yaml         # Deployment para o MCP Client
+        gearmand.yaml           # Deployment para o Gearman
+        clamav.yaml             # Deployment para o ClamAV
+        fits.yaml               # Deployment para o Fits
+    statefulsets/
+        mysql.yaml              # Statefulset para mysql
+        redis.yaml              # Statefulset para redis
+        elasticsearch.yaml      # Statefulset para elasticsearch
     _helpers.tpl                    # Helpers para templates
     configmap.yaml                  # ConfigMaps para configuração
-    secret.yaml                     # Secrets para senhas e chaves
-    deployment-dashboard.yaml       # Deployment para o Dashboard
-    deployment-storage-service.yaml # Deployment para o Storage Service
-    deployment-mcp-server.yaml      # Deployment para o MCP Server
-    deployment-mcp-client.yaml      # Deployment para o MCP Client
-    deployment-gearman.yaml         # Deployment para o Gearman
-    deployment-clamav.yaml          # Deployment para o ClamAV
-    deployment-fits.yaml            # Deployment para o Fits
-    service-dashboard.yaml          # Service para o Dashboard
-    service-storage-service.yaml    # Service para o Storage Service
-    service-mcp-server.yaml         # Service para o MCP Server
-    service-gearman.yaml            # Service para o Gearman
-    route-dashboard.yaml            # Route para o Dashboard (específico do OpenShift)
-    route-storage-service.yaml      # Route para o Storage Service (específico do OpenShift)
     pvc.yaml                        # PersistentVolumeClaims para armazenamento
+    route.yaml                      # Route para o Dashboard e Storage Service (específico do OpenShift)
+    secret.yaml                     # Secrets para senhas e chaves
     serviceaccount.yaml             # ServiceAccount para os pods
-    scc.yaml                        # SecurityContextConstraints (específico do OpenShift)
-    NOTES.txt                       # Notas de uso
+    scc.yaml                        # SecurityContextConstraints (específico do OpenShift)    
   charts/                           # Subcharts (se não usar dependências externas)
 ```
 
@@ -124,11 +123,3 @@ O arquivo `values.yaml` deve incluir configurações para:
 6. **Configurações específicas do Archivematica**: Chaves de API, configurações de processamento, etc.
 7. **Configurações específicas do OpenShift**: Namespace, rotas, etc.
 
-## Próximos Passos
-
-1. Analisar em detalhes o repositório do CERN para entender como eles estruturaram o Helm chart para Kubernetes
-2. Adaptar essa estrutura para OpenShift, considerando as diferenças entre as plataformas
-3. Criar a estrutura básica do Helm chart
-4. Desenvolver os templates Kubernetes/OpenShift
-5. Configurar valores e dependências
-6. Testar e validar o Helm chart
