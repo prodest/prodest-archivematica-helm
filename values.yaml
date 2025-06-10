@@ -100,8 +100,9 @@ mysql:
 clamav:
   enabled: true
   image:
-    repository: artefactual/clamav
-    tag: "latest"
+#    repository: artefactual/clamav
+    repository: clamav/clamav
+    tag: "1.4_base"
     pullPolicy: IfNotPresent
 
   # Configurações do ClamAV
@@ -171,8 +172,8 @@ fits:
 route:
   enabled: true
   tls: true
-  hostname: "archivematica.k8s-sbx.es.gov.br"
-  ss_hostname: "archivematica-dash.k8s-sbx.es.gov.br"
+  hostname: "archivematica.k8s.es.gov.br"
+  ss_hostname: "archivematica-dash.k8s.es.gov.br"
 
 # Configurações de segurança para OpenShift
 security:

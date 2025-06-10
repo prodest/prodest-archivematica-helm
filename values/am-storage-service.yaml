@@ -1,0 +1,13 @@
+# Configurações de imagem e persistência para o Storage Service
+archivematica_storage_service:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-storage-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce

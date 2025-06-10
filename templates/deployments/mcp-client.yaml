@@ -33,44 +33,97 @@ spec:
               drop:
               - ALL
           envFrom:
-            - configMapRef:
-                name: {{ include "archivematica.fullname" . }}-env
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
           env:
             # Adicionar outras variáveis de ambiente específicas do MCP Client
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_CLIENTSCRIPTS
-              value: "analyze,characterize,clean_up_transfer_directory,compress_transfer,create_METS_manifest,create_SIP_from_transfer,create_transfer_backlog,extract_packages,normalize,remove_processed_transfer,scan_for_viruses,validate_transfer_compliance"
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_PROCESSINGDIRECTORY
-              value: "/var/archivematica/sharedDirectory/watchedDirectories/activeProcessing"
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_REJECTEDDIRECTORY
-              value: "/var/archivematica/sharedDirectory/watchedDirectories/rejected"
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_TSUPLOADDIRECTORY
-              value: "/var/archivematica/sharedDirectory/watchedDirectories/upload"
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_WAITINGFORUPLOADDIRECTORY
-              value: "/var/archivematica/sharedDirectory/watchedDirectories/waitingForUpload"
-            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_EXTRACTPACKAGES_EXTRACTCOMMAND
-              value: "7za x -y -o%d %f"
-            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDHOST
-              value: "localhost" # Assumes ClamAV runs in the same pod or via localhost service
-            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDPORT
-              value: "3310"
-            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSCOMMAND
-              value: "/usr/share/fits/fits.sh -i %file% -o %output%"
-            - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSURL
-              value: "http://{{ include "archivematica.fullname" . }}-fits:2113/examine" # Assuming FITS runs as a separate service
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-secrets
+                  key: DJANGO_SECRET_KEY
+            - name: DJANGO_SETTINGS_MODULE
+              value: "settings.common"
+            # - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_BACKEND
+            #   value: "django.core.mail.backends.smtp.EmailBackend"
+            # - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_HOST
+            #   value: "cernmx.cern.ch"
+            # - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_PORT
+            #   value: "25"
+            # - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_DEFAULT_FROM_EMAIL
+            #   value:
+            # - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_SUBJECT_PREFIX
+            #   value: "DM AM Report"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_PORT
+              value: "3306"
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_DATABASE
+              value: MCP
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_MCPARCHIVEMATICASERVER
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_ELASTICSEARCHSERVER
+            #   value: "{{ include "archivematica.fullname" . }}-elasticsearch:9200"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_SEARCH_ENABLED
+              value: "false"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CAPTURE_CLIENT_SCRIPT_OUTPUT
+              value: "true" # import from values
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_PASS_BY_STREAM
+              value: "false"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_SERVER
+              value: "{{ include "archivematica.fullname" . }}-clamav:3310"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_FILE_SIZE
+              value: {{ .Values.clamav.max_file_size | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_SCAN_SIZE
+              value: {{ .Values.clamav.max_scan_size | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_STREAM_LENGTH
+              value: {{ .Values.clamav.max_stream_length | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_BACKEND
+              value: clamdscanner
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_PROMETHEUS_BIND_PORT
+              value: "7999"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_PROMETHEUS_BIND_ADDRESS
+              value: "0.0.0.0"
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_METADATA_XML_VALIDATION_ENABLED
+              value: "true"
+            - name: METADATA_XML_VALIDATION_SETTINGS_FILE
+              value: "/src/hack/submodules/archivematica-sampledata/xml-validation/xml_validation.py"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_CLIENTSCRIPTS
+            #   value: "analyze,characterize,clean_up_transfer_directory,compress_transfer,create_METS_manifest,create_SIP_from_transfer,create_transfer_backlog,extract_packages,normalize,remove_processed_transfer,scan_for_viruses,validate_transfer_compliance"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_PROCESSINGDIRECTORY
+            #   value: "/var/archivematica/sharedDirectory/watchedDirectories/activeProcessing"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_REJECTEDDIRECTORY
+            #   value: "/var/archivematica/sharedDirectory/watchedDirectories/rejected"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_TSUPLOADDIRECTORY
+            #   value: "/var/archivematica/sharedDirectory/watchedDirectories/upload"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_WAITINGFORUPLOADDIRECTORY
+            #   value: "/var/archivematica/sharedDirectory/watchedDirectories/waitingForUpload"
+            # - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_EXTRACTPACKAGES_EXTRACTCOMMAND
+            #   value: "7za x -y -o%d %f"
+            # - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDHOST
+            #   value: "localhost" # Assumes ClamAV runs in the same pod or via localhost service
+            # - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDPORT
+            #   value: "3310"
+            # - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSCOMMAND
+            #   value: "/usr/share/fits/fits.sh -i %file% -o %output%"
+            # - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSURL
+            #   value: "http://{{ include "archivematica.fullname" . }}-fits:2113/examine" # Assuming FITS runs as a separate service
           volumeMounts:
             # Montar volumes compartilhados necessários
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory
             - name: transfer-share
               mountPath: /home/transfer
-            - name: staging-data
-              mountPath: /var/archivematica/storage_service # Verificar caminho correto
-            - name: location-data
-              mountPath: /home # Verificar caminho correto
-            - name: storage-share
-              mountPath: /data/storage # Verificar caminho correto
+            # - name: staging-data
+            #   mountPath: /var/archivematica/storage_service # Verificar caminho correto
+            # - name: location-data
+            #   mountPath: /home # Verificar caminho correto
+            # - name: storage-share
+            #   mountPath: /data/storage # Verificar caminho correto
           resources:
             {{- toYaml .Values.mcp_client.resources | nindent 12 }}
           # Liveness and Readiness probes são recomendadas

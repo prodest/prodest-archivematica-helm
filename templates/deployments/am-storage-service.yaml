@@ -51,15 +51,103 @@ spec:
           command: ["sh"]
           args: ["-c", "python /src/storage_service/manage.py migrate --noinput"]
           envFrom:
-            - configMapRef:
-                name: {{ include "archivematica.fullname" . }}-env
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
+          # envFrom:
+          #   - configMapRef:
+          #       name: {{ include "archivematica.fullname" . }}-env
+          #   - secretRef:
+          #       name: {{ include "archivematica.fullname" . }}-secrets
           env:
             - name: DJANGO_SETTINGS_MODULE
-              value: "storage_service.settings.local"
+              value: "storage_service.settings.local" #"storage_service.settings.local"
             - name: SS_DB_URL
               value: {{ .Values.mysql.ss_db_url | quote }}
+            - name: FORWARDED_ALLOW_IPS
+              value: '*'
+            - name: SS_GNUPG_HOME_PATH
+              value: /var/archivematica/storage_service/.gnupg
+            - name: SS_GUNICORN_ACCESSLOG
+              value: /dev/null
+            - name: SS_GUNICORN_RELOAD
+              value: "true"
+            - name: SS_GUNICORN_RELOAD_ENGINE
+              value: auto
+            - name: SS_DB_NAME
+              value: {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
+        - name: archivematica-storage-service-create-user
+          image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
+          imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          command: ["sh"]
+          args: ["-c",'python /src/storage_service/manage.py create_user --username=$(AM_SS_USERNAME) --password=$(AM_SS_PASSWORD) --email=$(AM_SS_EMAIL) --api-key=$(AM_SS_API_KEY) --superuser ']
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          # envFrom:
+          #   - configMapRef:
+          #       name: {{ include "archivematica.fullname" . }}-env
+          #   - secretRef:
+          #       name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            - name: DJANGO_SETTINGS_MODULE
+              value: "storage_service.settings.local" #"storage_service.settings.local"
+            - name: SS_DB_URL
+              value: {{ .Values.mysql.ss_db_url | quote }}
+            - name: FORWARDED_ALLOW_IPS
+              value: '*'
+            - name: SS_GNUPG_HOME_PATH
+              value: /var/archivematica/storage_service/.gnupg
+            - name: SS_GUNICORN_ACCESSLOG
+              value: /dev/null
+            - name: SS_GUNICORN_RELOAD
+              value: "true"
+            - name: SS_GUNICORN_RELOAD_ENGINE
+              value: auto
+            - name: SS_DB_NAME
+              value: {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
+            - name: AM_SS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  key: AM_SS_USERNAME
+                  name: {{ include "archivematica.fullname" . }}-secrets
+            - name: AM_SS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: AM_SS_PASSWORD
+                  name: {{ include "archivematica.fullname" . }}-secrets
+            - name: AM_SS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: AM_SS_API_KEY
+                  name: {{ include "archivematica.fullname" . }}-secrets
+            - name: AM_SS_EMAIL
+              valueFrom:
+                configMapKeyRef:
+                  key: AM_SS_EMAIL
+                  name: {{ include "archivematica.fullname" . }}-secrets
       containers:
         - name: storage-service
           image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
@@ -75,17 +163,51 @@ spec:
             - containerPort: 8002
               name: http
           envFrom:
-            - configMapRef:
-                name: {{ include "archivematica.fullname" . }}-env
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
+          # envFrom:
+          #   - configMapRef:
+          #       name: {{ include "archivematica.fullname" . }}-env
+          #   - secretRef:
+          #       name: {{ include "archivematica.fullname" . }}-secrets
           env:
+            # - name: DJANGO_SECRET_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: {{ include "archivematica.fullname" . }}-secrets
+            #       key: DJANGO_SECRET_KEY
+            - name: DJANGO_SETTINGS_MODULE
+              value: "storage_service.settings.local" #"storage_service.settings.local"
+            - name: SS_DB_URL
+              value: {{ .Values.mysql.ss_db_url | quote }} # "mysql://$(SS_DB_USER):$(SS_DB_PASSWORD)@$(SS_DB_HOST):$(SS_DB_PORT)/$(SS_DB_NAME)"
+            - name: FORWARDED_ALLOW_IPS
+              value: '*'
+            - name: SS_GNUPG_HOME_PATH
+              value: /var/archivematica/storage_service/.gnupg
+            - name: SS_GUNICORN_ACCESSLOG
+              value: /dev/null
+            - name: SS_GUNICORN_RELOAD
+              value: "true"
+            - name: SS_GUNICORN_RELOAD_ENGINE
+              value: auto
+            - name: SS_DB_NAME
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
             - name: SS_GUNICORN_BIND
               value: "0.0.0.0:8002"
-            - name: DJANGO_SETTINGS_MODULE
-              value: "storage_service.settings.local"
-            - name: SS_DB_URL
-              value: {{ .Values.mysql.ss_db_url | quote }}
+            - name: SS_GUNICORN_USER
+              value: {{ .Values.general.user_uid | quote }}
+            - name: SS_GUNICORN_GROUP
+              value: {{ .Values.general.user_uid | quote }}
+            # - name: SS_GUNICORN_LOGLEVEL
+            #   value: "debug"
           volumeMounts:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory

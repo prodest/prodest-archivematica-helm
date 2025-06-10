@@ -1,0 +1,24 @@
+# Configurações para o MySQL
+mysql:
+  enabled: true
+  image:
+    repository: percona #TODO: VERIFICAR PARA UTILIZAR O PERCONA:8.0
+    tag: "8"
+    pullPolicy: IfNotPresent
+
+  # Configurações do banco de dados
+  db:
+    #name: "archivematica_db"
+    user: "archivematica"
+    password: "archivematica"
+    rootPassword: "root_password"
+
+  # URL de conexão para o Storage Service
+  ss_db_url: "mysql://archivematica:archivematica@archivematica-mysql:3306/SS"
+
+  # Persistência para o MySQL
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce

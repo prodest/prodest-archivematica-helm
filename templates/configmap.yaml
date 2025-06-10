@@ -79,6 +79,20 @@ data:
     MaxScanSize 2048M
     StreamMaxLength 2048M
     # Adicione outras configurações conforme necessário
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-db
+data:
+  # The key 'init.sql' becomes the filename in the mounted directory.
+  init.sql: |
+    # This script will create a new database and a dedicated user for your application.
+    CREATE DATABASE IF NOT EXISTS SS;
+    CREATE DATABASE IF NOT EXISTS MCP;
+    GRANT ALL ON `SS`.* TO "archivematica"@"%";
+    GRANT ALL ON `MCP`.* TO "archivematica"@"%";
+    FLUSH PRIVILEGES;
 {{- /* Comments
 ---
 # ConfigMap específico para Freshclam (se necessário, exemplo baseado no CERN chart)

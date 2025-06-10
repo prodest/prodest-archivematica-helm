@@ -1,0 +1,220 @@
+# Configurações de imagem para o Dashboard
+archivematica_dashboard:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
+    tag: "latest"
+    pullPolicy: IfNotPresent
+# Configurações de imagem e persistência para o Storage Service
+archivematica_storage_service:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-storage-service
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+# Configurações para o ClamAV
+clamav:
+  enabled: true
+  image:
+#    repository: artefactual/clamav
+    repository: clamav/clamav
+    tag: "1.4_base"
+
+  # Configurações do ClamAV
+  max_file_size: "2048"
+  max_scan_size: "2048"
+  max_stream_length: "2048"
+  # Persistência para o ClamAV
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+# Valores padrão para o Helm chart do Archivematica para OpenShift
+# Este é um arquivo YAML formatado
+# Declare variáveis a serem passadas para os templates
+
+# Configurações gerais
+general:
+  # UID do usuário para execução dos contêineres
+  # Escolha este valor com base no intervalo permitido do seu projeto OpenShift
+  # (verifique a anotação openshift.io/sa.scc.uid-range)
+  user_uid: "1001490000"
+
+  # Namespace para instalação (será substituído pelo namespace de lançamento)
+  namespace: npr-prodest-pds
+
+
+# Configurações de rota para OpenShift
+route:
+  enabled: true
+  tls: true
+  hostname: "archivematica.k8s.es.gov.br"
+  ss_hostname: "archivematica-dash.k8s.es.gov.br"
+
+# Configurações de segurança para OpenShift
+security:
+  # ServiceAccount para os pods
+  serviceAccount:
+    # create: true
+    name: "archivematica"
+  serviceAccountAnyUID:
+    # create: true
+    name: "anyuid"
+  # # SecurityContextConstraints para OpenShift
+  # scc:
+  #   # Usar SCC existente ou criar uma personalizada
+  #   # Valores possíveis: "restricted", "nonroot", "anyuid", "custom"
+  #   use: "anyuid"
+
+  #   # Nome da SCC personalizada (se use: "custom")
+  #   custom_name: "archivematica-scc"
+
+# Configurações de volumes compartilhados
+shared_volumes:
+  # Volume para dados do pipeline
+  pipeline_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para dados de staging
+  staging_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para dados de localização
+  location_data:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para compartilhamento de transferência
+  transfer_share:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+
+  # Volume para compartilhamento de armazenamento
+  storage_share:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteMany
+# Configurações para o Elasticsearch
+elasticsearch:
+  enabled: false
+  image:
+    repository: elasticsearch
+    tag: "7.17.0"
+    pullPolicy: IfNotPresent
+
+  # Persistência para o Elasticsearch
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+# Configurações para o FITS
+fits:
+  enabled: true
+  image:
+    repository: artefactual/fits-ngserver
+    tag: "0.8.4"
+    pullPolicy: IfNotPresent
+# Configurações para o Gearman
+gearmand:
+  enabled: true
+  image:
+    repository: artefactual/gearmand
+    tag: "1.1.18-alpine"
+    pullPolicy: IfNotPresent
+
+  # Configurações do Gearman
+  queue_type: "redis"
+  redis_server: "redis"
+  redis_port: 6379
+# Configurações de imagem para o MCP Client
+mcp_client:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-mcp-client
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # Número de réplicas do MCP Client
+  replicas: 1
+
+  # Recursos para o MCP Client
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2048Mi"
+      cpu: "1000m"
+# Configurações de imagem para o MCP Server
+mcp_server:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-mcp-server
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  # Recursos para o MCP Server
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "1024Mi"
+      cpu: "500m"
+# Configurações para o MySQL
+mysql:
+  enabled: true
+  image:
+    repository: percona #TODO: VERIFICAR PARA UTILIZAR O PERCONA:8.0
+    tag: "8"
+    pullPolicy: IfNotPresent
+
+  # Configurações do banco de dados
+  db:
+    #name: "archivematica_db"
+    user: "archivematica"
+    password: "archivematica"
+    rootPassword: "root_password"
+
+  # URL de conexão para o Storage Service
+  ss_db_url: "mysql://archivematica:archivematica@archivematica-mysql:3306/SS"
+
+  # Persistência para o MySQL
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+# Configurações para o Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "6.0"
+    pullPolicy: IfNotPresent
+
+  # Persistência para o Redis
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce

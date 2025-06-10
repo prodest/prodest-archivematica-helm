@@ -1,0 +1,14 @@
+# Configurações para o Elasticsearch
+elasticsearch:
+  enabled: false
+  image:
+    repository: elasticsearch
+    tag: "7.17.0"
+    pullPolicy: IfNotPresent
+
+  # Persistência para o Elasticsearch
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce

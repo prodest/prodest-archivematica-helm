@@ -59,21 +59,24 @@ spec:
                 secretKeyRef:
                   name: {{ include "archivematica.fullname" . }}-secrets
                   key: MYSQL_ROOT_PASSWORD
-            - name: MYSQL_DATABASE
-              value: {{ .Values.mysql.db.name | quote }}
+            # - name: MYSQL_DATABASE
+            #   value: {{ .Values.mysql.db.name | quote }}
             - name: MYSQL_USER
               value: {{ .Values.mysql.db.user | quote }}
             - name: MYSQL_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "archivematica.fullname" . }}-secrets
-                  key: MYSQL_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: {{ include "archivematica.fullname" . }}-secrets
+              #     key: MYSQL_PASSWORD
             # Adicionar env para SS database (se necessário criar separadamente)
             # - name: MYSQL_DATABASE_SS
             #   value: "SS"
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql
+            - name: mysql-initdb-script
+              mountPath: /docker-entrypoint-initdb.d
           # Liveness and Readiness probes são recomendadas para produção
           # livenessProbe:
           #   exec:
@@ -87,6 +90,10 @@ spec:
           #   initialDelaySeconds: 5
           #   periodSeconds: 2
           #   timeoutSeconds: 1
+      volumes:
+        - name: mysql-initdb-script
+          configMap:
+            name: mysql-init-db
   volumeClaimTemplates:
     - metadata:
         name: mysql-persistent-storage
