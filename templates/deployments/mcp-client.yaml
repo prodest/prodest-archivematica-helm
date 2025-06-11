@@ -88,10 +88,10 @@ spec:
               value: "7999"
             - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_PROMETHEUS_BIND_ADDRESS
               value: "0.0.0.0"
-            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_METADATA_XML_VALIDATION_ENABLED
-              value: "true"
-            - name: METADATA_XML_VALIDATION_SETTINGS_FILE
-              value: "/src/hack/submodules/archivematica-sampledata/xml-validation/xml_validation.py"
+            # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_METADATA_XML_VALIDATION_ENABLED
+            #   value: "true"
+            # - name: METADATA_XML_VALIDATION_SETTINGS_FILE
+            #   value: "/src/hack/submodules/archivematica-sampledata/xml-validation/xml_validation.py"
             # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_CLIENTSCRIPTS
             #   value: "analyze,characterize,clean_up_transfer_directory,compress_transfer,create_METS_manifest,create_SIP_from_transfer,create_transfer_backlog,extract_packages,normalize,remove_processed_transfer,scan_for_viruses,validate_transfer_compliance"
             # - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_PROCESSINGDIRECTORY

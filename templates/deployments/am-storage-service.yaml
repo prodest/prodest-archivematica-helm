@@ -74,7 +74,7 @@ spec:
             - name: SS_GUNICORN_RELOAD_ENGINE
               value: auto
             - name: SS_DB_NAME
-              value: {{ .Values.mysql.db.name | quote }}
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
             - name: SS_DB_USER
               value: {{ .Values.mysql.db.user | quote }}
             - name: SS_DB_PASSWORD
@@ -119,7 +119,7 @@ spec:
             - name: SS_GUNICORN_RELOAD_ENGINE
               value: auto
             - name: SS_DB_NAME
-              value: {{ .Values.mysql.db.name | quote }}
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
             - name: SS_DB_USER
               value: {{ .Values.mysql.db.user | quote }}
             - name: SS_DB_PASSWORD
@@ -145,7 +145,7 @@ spec:
                   name: {{ include "archivematica.fullname" . }}-secrets
             - name: AM_SS_EMAIL
               valueFrom:
-                configMapKeyRef:
+                secretKeyRef:
                   key: AM_SS_EMAIL
                   name: {{ include "archivematica.fullname" . }}-secrets
       containers:
