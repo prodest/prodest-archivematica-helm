@@ -70,7 +70,7 @@ data:
     TCPSocket 3310
     Foreground yes
     #FixStaleSocket yes
-    #User 1001490000
+    User 1001490000
     ScanPDF yes
     ScanHTML yes
     ScanMail yes
@@ -78,7 +78,13 @@ data:
     MaxFileSize 2048M
     MaxScanSize 2048M
     StreamMaxLength 2048M
+    DatabaseDirectory /var/lib/clamav
     # Adicione outras configurações conforme necessário
+  freshclam.conf: |
+    DatabaseDirectory /var/lib/clamav
+    #AllowSupplementaryGroups yes
+    DatabaseOwner 1001490000
+    DatabaseMirror database.clamav.net
 ---
 apiVersion: v1
 kind: ConfigMap

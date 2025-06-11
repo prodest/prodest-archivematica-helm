@@ -34,10 +34,10 @@ spec:
     spec:
       # serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
-      # securityContext:
-      #   fsGroup: {{ .Values.general.user_uid }}
-      #   runAsUser: {{ .Values.general.user_uid }}
-      #   runAsGroup: {{ .Values.general.user_uid }}
+      securityContext:
+        fsGroup: {{ .Values.general.user_uid }}
+        runAsUser: {{ .Values.general.user_uid }}
+        runAsGroup: {{ .Values.general.user_uid }}
       # Init container to update ClamAV database on startup
       initContainers:
       - name: freshclam-init
@@ -49,6 +49,13 @@ spec:
         volumeMounts:
         - name: clamav-db
           mountPath: /var/lib/clamav
+        - mountPath: /etc/clamav/freshclam.conf
+          name: freshclam-config-volume
+          subPath: freshclam.conf
+        securityContext:
+          fsGroup: {{ .Values.general.user_uid }}
+          runAsUser: {{ .Values.general.user_uid }}
+          runAsGroup: {{ .Values.general.user_uid }}
       #   - name: clamav-log
       #     mountPath: /var/log/clamav
       # #   - name: clamav-run
@@ -82,6 +89,12 @@ spec:
             - name: clamd-config-volume
               mountPath: /etc/clamav/clamd.conf
               subPath: clamd.conf
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+          securityContext:
+            fsGroup: {{ .Values.general.user_uid }}
+            runAsUser: {{ .Values.general.user_uid }}
+            runAsGroup: {{ .Values.general.user_uid }}
           # Liveness and Readiness probes are recommended
           # livenessProbe:
           #   tcpSocket:
@@ -134,12 +147,15 @@ spec:
             items:
               - key: clamd.conf
                 path: clamd.conf
-        # - name: freshclam-config-volume
-        #   configMap:
-        #     name: {{ include "archivematica.fullname" . }}-freshclam-conf
-        #     items:
-        #       - key: freshclam.conf
-        #         path: freshclam.conf
+        - name: freshclam-config-volume
+          configMap:
+            name: {{ include "archivematica.fullname" . }}-clamd-conf
+            items:
+              - key: freshclam.conf
+                path: freshclam.conf
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: archivematica-pipeline-data
 ---
 {{- if .Values.clamav.persistence.enabled }}
 apiVersion: v1
