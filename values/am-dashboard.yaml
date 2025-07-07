@@ -1,7 +1,0 @@
-# Configurações de imagem para o Dashboard
-archivematica_dashboard:
-  enabled: true
-  image:
-    repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
-    tag: "latest"
-    pullPolicy: IfNotPresent

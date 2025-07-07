@@ -1,7 +1,0 @@
-# Configurações para o FITS
-fits:
-  enabled: true
-  image:
-    repository: artefactual/fits-ngserver
-    tag: "0.8.4"
-    pullPolicy: IfNotPresent
