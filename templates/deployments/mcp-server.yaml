@@ -54,38 +54,33 @@ spec:
             - containerPort: 8000 # Porta interna do MCP Server
               name: http
           envFrom:
-            # - configMapRef:
-            #     name: {{ include "archivematica.fullname" . }}-env
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
           env:
+            {{- toYaml .Values.mcp_server.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            {{- end }}
+            {{- if .Values.gearmand.enabled }}
+            - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_MCPARCHIVEMATICASERVER
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+            {{- end }}
             - name: DJANGO_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "archivematica.fullname" . }}-secrets
                   key: DJANGO_SECRET_KEY
-            # Override DJANGO_SETTINGS_MODULE se necessário
-            - name: DJANGO_SETTINGS_MODULE
-              value: "settings.common"
-            # Adicionar outras variáveis de ambiente específicas do MCP Server
-            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_USER
-              value: {{ .Values.mysql.db.user | quote }}
-            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_PASSWORD
-              value: {{ .Values.mysql.db.password | quote }}
-            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_HOST
-              value: "{{ include "archivematica.fullname" . }}-mysql"
-            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_PORT
-              value: "3306"
-            - name: ARCHIVEMATICA_MCPSERVER_CLIENT_DATABASE
-              value: "MCP" # {{ .Values.mysql.db.name | quote }}
-            - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_MCPARCHIVEMATICASERVER
-              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
-            - name: ARCHIVEMATICA_MCPSERVER_SEARCH_ENABLED
-              value: "true" # Habilitar se Elasticsearch estiver habilitado
-            - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_PROMETHEUS_BIND_PORT
-              value: "7999"
-            - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_PROMETHEUS_BIND_ADDRESS
-              value: "0.0.0.0"
           volumeMounts:
             # Montar volumes compartilhados necessários (pipeline, transfer, etc.)
             - name: pipeline-data

@@ -2,7 +2,9 @@
 # Este é um arquivo YAML formatado
 # Declare variáveis a serem passadas para os templates
 
-# Configurações gerais
+################################################################################
+#                          Configurações Gerais                                #
+################################################################################
 general:
   # UID do usuário para execução dos contêineres
   # Escolha este valor com base no intervalo permitido do seu projeto OpenShift
@@ -12,7 +14,69 @@ general:
   # Namespace para instalação (será substituído pelo namespace de lançamento)
   namespace: npr-prodest-pds
 
-# Configurações de imagem e persistência para o Storage Service
+################################################################################
+#                   Configurações de segurança para OpenShift                  #
+################################################################################
+security:
+  # ServiceAccount para os pods
+  serviceAccount:
+    # create: true
+    name: "archivematica"
+  serviceAccountAnyUID:
+    # create: true
+    name: "anyuid"
+  # # SecurityContextConstraints para OpenShift
+  # scc:
+  #   # Usar SCC existente ou criar uma personalizada
+  #   # Valores possíveis: "restricted", "nonroot", "anyuid", "custom"
+  #   use: "anyuid"
+
+  #   # Nome da SCC personalizada (se use: "custom")
+  #   custom_name: "archivematica-scc"
+
+################################################################################
+#                   Configurações Dashboard                                    #
+################################################################################
+archivematica_dashboard:
+  enabled: true
+  image:
+    repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  env:
+    - name: FORWARDED_ALLOW_IPS
+      value: '*'
+    - name: AM_GUNICORN_ACCESSLOG
+      value: /dev/null
+    - name: AM_GUNICORN_RELOAD
+      value: "true"
+    - name: AM_GUNICORN_RELOAD_ENGINE
+      value: auto
+    - name: ARCHIVEMATICA_DASHBOARD_EMAIL_PORT
+      value: "587"
+    - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PORT
+      value: "3306"
+    - name: AM_GUNICORN_BIND
+      value: "0.0.0.0:8001"
+    - name: DJANGO_SETTINGS_MODULE
+      value: "settings.local" # "settings.local"
+    - name: AM_GUNICORN_LOGLEVEL
+      value: "debug"
+    - name: AM_GUNICORN_WORKERS
+      value: "1"
+    - name: AM_GUNICORN_PROC_NAME
+      value: "archivematica-dashboard"
+    - name: AM_GUNICORN_CHDIR
+      value: "/src/src/archivematicaCommon/lib/"
+    - name: ARCHIVEMATICA_DASHBOARD_CLIENT_DATABASE
+      value: "MCP" # {{ .Values.mysql.db.name | quote }}
+    - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_ELASTICSEARCH_SERVER
+      value: "10.242.35.75:9200"
+    - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_SEARCH_ENABLED
+      value: "true"
+################################################################################
+#                  Configurações Storage Service                               #
+################################################################################
 archivematica_storage_service:
   enabled: true
   image:
@@ -25,16 +89,96 @@ archivematica_storage_service:
     size: 2Gi
     storageClass: ""
     accessMode: ReadWriteOnce
-
-# Configurações de imagem para o Dashboard
-archivematica_dashboard:
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: "storage_service.settings.local" #"storage_service.settings.local"
+    - name: FORWARDED_ALLOW_IPS
+      value: '*'
+    - name: SS_GNUPG_HOME_PATH
+      value: /var/archivematica/storage_service/.gnupg
+    - name: SS_GUNICORN_ACCESSLOG
+      value: /dev/null
+    - name: SS_GUNICORN_RELOAD
+      value: "true"
+    - name: SS_GUNICORN_RELOAD_ENGINE
+      value: auto
+    - name: SS_GUNICORN_BIND
+      value: "0.0.0.0:8002"
+    # - name: SS_GUNICORN_LOGLEVEL
+    #   value: "debug"
+################################################################################
+#                  Configurações ClamAV                                        #
+################################################################################
+clamav:
   enabled: true
   image:
-    repository: registry.prodest.es.gov.br/devops/archivematica-dashboard
-    tag: "latest"
+    repository: clamav/clamav
+    tag: "1.4_base"
+  max_file_size: "2048"
+  max_scan_size: "2048"
+  max_stream_length: "2048"
+  # Persistência para o ClamAV
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+################################################################################
+#                  Configurações de rota para OpenShift                        #
+################################################################################
+route:
+  enabled: true
+  tls: true
+  hostname: "archivematica.k8s-npr.es.gov.br"
+  ss_hostname: "archivematica-dash.k8s-npr.es.gov.br"
+
+
+################################################################################
+#                    Configurações Elasticsearch                               #
+################################################################################
+elasticsearch:
+  enabled: false
+  image:
+    repository: elasticsearch
+    tag: "7.17.0"
     pullPolicy: IfNotPresent
 
-# Configurações de imagem para o MCP Client
+  # Persistência para o Elasticsearch
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: ""
+    accessMode: ReadWriteOnce
+
+################################################################################
+#                     Configurações FITS                                       #
+################################################################################
+fits:
+  enabled: true
+  image:
+    repository: artefactual/fits-ngserver
+    tag: "0.8.4"
+    pullPolicy: IfNotPresent
+
+################################################################################
+#                     Configurações Gearman                                    #
+################################################################################
+gearmand:
+  enabled: true
+  image:
+    repository: artefactual/gearmand
+    tag: "1.1.18-alpine"
+    pullPolicy: IfNotPresent
+
+  # Configurações do Gearman
+  queue_type: "redis"
+  redis_server: "redis"
+  redis_port: 6379
+
+################################################################################
+#                     Configurações MCP Client                                 #
+################################################################################
 mcp_client:
   enabled: true
   image:
@@ -53,8 +197,65 @@ mcp_client:
     limits:
       memory: "2048Mi"
       cpu: "1000m"
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: "settings.common"
+    - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_PORT
+      value: "3306"
+    - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_DATABASE
+      value: MCP
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_ELASTICSEARCHSERVER
+      value: "10.242.35.75:9200"
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_SEARCH_ENABLED
+      value: "true"
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CAPTURE_CLIENT_SCRIPT_OUTPUT
+      value: "true"
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_PASS_BY_STREAM
+      value: "false"
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_BACKEND
+      value: clamdscanner
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_PROMETHEUS_BIND_PORT
+      value: "7999"
+    - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_PROMETHEUS_BIND_ADDRESS
+      value: "0.0.0.0"
+# - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_BACKEND
+#   value: "django.core.mail.backends.smtp.EmailBackend"
+# - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_HOST
+#   value: "cernmx.cern.ch"
+# - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_PORT
+#   value: "25"
+# - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_DEFAULT_FROM_EMAIL
+#   value:
+# - name: ARCHIVEMATICA_MCPCLIENT_EMAIL_SUBJECT_PREFIX
+#   value: "DM AM Report"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_METADATA_XML_VALIDATION_ENABLED
+#   value: "true"
+# - name: METADATA_XML_VALIDATION_SETTINGS_FILE
+#   value: "/src/hack/submodules/archivematica-sampledata/xml-validation/xml_validation.py"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_CLIENTSCRIPTS
+#   value: "analyze,characterize,clean_up_transfer_directory,compress_transfer,create_METS_manifest,create_SIP_from_transfer,create_transfer_backlog,extract_packages,normalize,remove_processed_transfer,scan_for_viruses,validate_transfer_compliance"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_PROCESSINGDIRECTORY
+#   value: "/var/archivematica/sharedDirectory/watchedDirectories/activeProcessing"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_REJECTEDDIRECTORY
+#   value: "/var/archivematica/sharedDirectory/watchedDirectories/rejected"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_TSUPLOADDIRECTORY
+#   value: "/var/archivematica/sharedDirectory/watchedDirectories/upload"
+# - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_WATCHDIRECTORIES_WAITINGFORUPLOADDIRECTORY
+#   value: "/var/archivematica/sharedDirectory/watchedDirectories/waitingForUpload"
+# - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_EXTRACTPACKAGES_EXTRACTCOMMAND
+#   value: "7za x -y -o%d %f"
+# - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDHOST
+#   value: "localhost" # Assumes ClamAV runs in the same pod or via localhost service
+# - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_SCANFORVIRUSES_CLAMDPORT
+#   value: "3310"
+# - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSCOMMAND
+#   value: "/usr/share/fits/fits.sh -i %file% -o %output%"
+# - name: ARCHIVEMATICA_MCPCLIENT_CLIENTSCRIPTS_CHARACTERIZEANDEXTRACTMETADATA_FITSURL
+#   value: "http://{{ include "archivematica.fullname" . }}-fits:2113/examine" # Assuming FITS runs as a separate service
 
-# Configurações de imagem para o MCP Server
+################################################################################
+#                     Configurações MCP Server                                 #
+################################################################################
 mcp_server:
   enabled: true
   image:
@@ -70,8 +271,23 @@ mcp_server:
     limits:
       memory: "1024Mi"
       cpu: "500m"
-
-# Configurações para o MySQL
+  # Environment variables para o MCP Server
+  env:
+    - name: ARCHIVEMATICA_MCPSERVER_SEARCH_ENABLED
+      value: "true"
+    - name: ARCHIVEMATICA_MCPSERVER_CLIENT_PORT
+      value: "3306"
+    - name: ARCHIVEMATICA_MCPSERVER_CLIENT_DATABASE
+      value: "MCP"
+    - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_PROMETHEUS_BIND_PORT
+      value: "7999"
+    - name: ARCHIVEMATICA_MCPSERVER_MCPSERVER_PROMETHEUS_BIND_ADDRESS
+      value: "0.0.0.0"
+    - name: DJANGO_SETTINGS_MODULE # Override DJANGO_SETTINGS_MODULE se necessário
+      value: "settings.common"
+################################################################################
+#                     Configurações MySQL                                      #
+################################################################################
 mysql:
   enabled: true
   image:
@@ -81,13 +297,13 @@ mysql:
 
   # Configurações do banco de dados
   db:
-    name: "archivematica_db"
+    #name: "archivematica_db"
     user: "archivematica"
     password: "archivematica"
     rootPassword: "root_password"
 
   # URL de conexão para o Storage Service
-  ss_db_url: "mysql://archivematica:archivematica@mysql:3306/SS"
+  ss_db_url: "mysql://archivematica:archivematica@archivematica-mysql:3306/SS"
 
   # Persistência para o MySQL
   persistence:
@@ -96,28 +312,9 @@ mysql:
     storageClass: ""
     accessMode: ReadWriteOnce
 
-# Configurações para o ClamAV
-clamav:
-  enabled: true
-  image:
-#    repository: artefactual/clamav
-    repository: clamav/clamav
-    tag: "1.4_base"
-    pullPolicy: IfNotPresent
-
-  # Configurações do ClamAV
-  max_file_size: "2048"
-  max_scan_size: "2048"
-  max_stream_length: "2048"
-
-  # Persistência para o ClamAV
-  persistence:
-    enabled: true
-    size: 2Gi
-    storageClass: ""
-    accessMode: ReadWriteOnce
-
-# Configurações para o Redis
+################################################################################
+#                     Configurações Redis                                      #
+################################################################################
 redis:
   enabled: true
   image:
@@ -132,68 +329,10 @@ redis:
     storageClass: ""
     accessMode: ReadWriteOnce
 
-# Configurações para o Elasticsearch
-elasticsearch:
-  enabled: false
-  image:
-    repository: elasticsearch
-    tag: "7.17.0"
-    pullPolicy: IfNotPresent
 
-  # Persistência para o Elasticsearch
-  persistence:
-    enabled: true
-    size: 2Gi
-    storageClass: ""
-    accessMode: ReadWriteOnce
-
-# Configurações para o Gearman
-gearmand:
-  enabled: true
-  image:
-    repository: artefactual/gearmand
-    tag: "1.1.18-alpine"
-    pullPolicy: IfNotPresent
-
-  # Configurações do Gearman
-  queue_type: "redis"
-  redis_server: "redis"
-  redis_port: 6379
-
-# Configurações para o FITS
-fits:
-  enabled: true
-  image:
-    repository: artefactual/fits-ngserver
-    tag: "0.8.4"
-    pullPolicy: IfNotPresent
-
-# Configurações de rota para OpenShift
-route:
-  enabled: true
-  tls: true
-  hostname: "archivematica.k8s.es.gov.br"
-  ss_hostname: "archivematica-dash.k8s.es.gov.br"
-
-# Configurações de segurança para OpenShift
-security:
-  # ServiceAccount para os pods
-  serviceAccount:
-    # create: true
-    name: "archivematica"
-  serviceAccountAnyUID:
-    # create: true
-    name: "anyuid"
-  # # SecurityContextConstraints para OpenShift
-  # scc:
-  #   # Usar SCC existente ou criar uma personalizada
-  #   # Valores possíveis: "restricted", "nonroot", "anyuid", "custom"
-  #   use: "anyuid"
-
-  #   # Nome da SCC personalizada (se use: "custom")
-  #   custom_name: "archivematica-scc"
-
-# Configurações de volumes compartilhados
+################################################################################
+#                     Configurações volumes compartilhados                     #
+################################################################################
 shared_volumes:
   # Volume para dados do pipeline
   pipeline_data:
@@ -229,3 +368,4 @@ shared_volumes:
     size: 2Gi
     storageClass: ""
     accessMode: ReadWriteMany
+

@@ -35,21 +35,10 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "mysql") | nindent 8 }}
     spec:
       serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
-      # securityContext:
-      #   fsGroup: {{ .Values.general.user_uid }}
-      #   runAsUser: {{ .Values.general.user_uid }}
-      #   runAsGroup: {{ .Values.general.user_uid }}
       containers:
         - name: mysql
           image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
           imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
-          # securityContext:
-          #   runAsUser: {{ .Values.general.user_uid }}
-          #   runAsGroup: {{ .Values.general.user_uid }}
-          #   allowPrivilegeEscalation: false
-          #   capabilities:
-          #     drop:
-          #     - ALL
           ports:
             - containerPort: 3306
               name: mysql
@@ -57,21 +46,18 @@ spec:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "archivematica.fullname" . }}-secrets
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
                   key: MYSQL_ROOT_PASSWORD
-            # - name: MYSQL_DATABASE
-            #   value: {{ .Values.mysql.db.name | quote }}
             - name: MYSQL_USER
-              value: {{ .Values.mysql.db.user | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
             - name: MYSQL_PASSWORD
-              value: {{ .Values.mysql.db.password | quote }}
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: {{ include "archivematica.fullname" . }}-secrets
-              #     key: MYSQL_PASSWORD
-            # Adicionar env para SS database (se necessário criar separadamente)
-            # - name: MYSQL_DATABASE_SS
-            #   value: "SS"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
           volumeMounts:
             - name: mysql-persistent-storage
               mountPath: /var/lib/mysql

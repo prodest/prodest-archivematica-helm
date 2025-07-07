@@ -49,28 +49,25 @@ spec:
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
           env:
-            - name: DJANGO_SETTINGS_MODULE
-              value: "settings.local"
-            - name: FORWARDED_ALLOW_IPS
-              value: '*'
-            - name: AM_GUNICORN_ACCESSLOG
-              value: /dev/null
-            - name: AM_GUNICORN_RELOAD
-              value: "true"
-            - name: AM_GUNICORN_RELOAD_ENGINE
-              value: auto
-            - name: ARCHIVEMATICA_DASHBOARD_EMAIL_PORT
-              value: "587"
+            {{- toYaml .Values.archivematica_dashboard.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
-              value: {{ .Values.mysql.db.user | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PASSWORD
-              value: {{ .Values.mysql.db.password | quote }}
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_DATABASE
-              value: MCP # TODO
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
             - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
               value: "{{ include "archivematica.fullname" . }}-mysql"
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PORT
-              value: "3306"
+            {{- end }}
+            - name: AM_GUNICORN_USER
+              value: {{ .Values.general.user_uid | quote }}
+            - name: AM_GUNICORN_GROUP
+              value: {{ .Values.general.user_uid | quote }}
       containers:
         - name: dashboard
           image: "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
@@ -86,53 +83,32 @@ spec:
             - containerPort: 8001
               name: http
           envFrom:
-            # - configMapRef:
-            #     name: {{ include "archivematica.fullname" . }}-env
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets
           env:
-            - name: AM_GUNICORN_BIND
-              value: "0.0.0.0:8001"
-            - name: DJANGO_SETTINGS_MODULE
-              value: "settings.local" # "settings.local"
-            - name: FORWARDED_ALLOW_IPS
-              value: '*'
-            - name: AM_GUNICORN_ACCESSLOG
-              value: /dev/null
-            - name: AM_GUNICORN_RELOAD
-              value: "true"
-            - name: AM_GUNICORN_RELOAD_ENGINE
-              value: auto
+            {{- toYaml .Values.archivematica_dashboard.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            {{- end }}
+            {{- if .Values.gearmand.enabled }}
+            - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_GEARMAN_SERVER
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+            {{- end }}
             - name: AM_GUNICORN_USER
               value: {{ .Values.general.user_uid | quote }}
             - name: AM_GUNICORN_GROUP
               value: {{ .Values.general.user_uid | quote }}
-            - name: AM_GUNICORN_LOGLEVEL
-              value: "debug"
-            - name: AM_GUNICORN_WORKERS
-              value: "1"
-            - name: AM_GUNICORN_PROC_NAME
-              value: "archivematica-dashboard"
-            - name: AM_GUNICORN_CHDIR
-              value: "/src/src/archivematicaCommon/lib/"
-            - name: ARCHIVEMATICA_DASHBOARD_EMAIL_PORT
-              value: "587"
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
-              value: {{ .Values.mysql.db.user | quote }}
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PASSWORD
-              value: {{ .Values.mysql.db.password | quote }}
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
-              value: "{{ include "archivematica.fullname" . }}-mysql"
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PORT
-              value: "3306"
-            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_DATABASE
-              value: "MCP" # {{ .Values.mysql.db.name | quote }}
-            - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_ELASTICSEARCH_SERVER
-              value: "10.242.35.75:9200"
-            - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_SEARCH_ENABLED
-              value: "true"
-            - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_GEARMAN_SERVER
-              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
           volumeMounts:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory
