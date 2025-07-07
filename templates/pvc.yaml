@@ -6,6 +6,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - {{ .Values.shared_volumes.pipeline_data.accessMode }}
@@ -25,6 +27,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - {{ .Values.shared_volumes.staging_data.accessMode }}
@@ -44,6 +48,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - {{ .Values.shared_volumes.location_data.accessMode }}
@@ -63,6 +69,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - {{ .Values.shared_volumes.transfer_share.accessMode }}
@@ -82,6 +90,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "archivematica.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
 spec:
   accessModes:
     - {{ .Values.shared_volumes.storage_share.accessMode }}
