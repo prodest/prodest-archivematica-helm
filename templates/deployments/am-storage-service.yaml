@@ -67,7 +67,10 @@ spec:
             - name: SS_DB_NAME
               value: "SS" # {{ .Values.mysql.db.name | quote }}
             - name: SS_DB_URL
-              value: {{ .Values.mysql.ss_db_url | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: SSDB_URL
             {{- end }}
             - name: SS_GUNICORN_USER
               value: {{ .Values.general.user_uid | quote }}
