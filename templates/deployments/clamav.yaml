@@ -153,7 +153,7 @@ spec:
                 path: freshclam.conf
         - name: pipeline-data
           persistentVolumeClaim:
-            claimName: archivematica-pipeline-data
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
 ---
 {{- if .Values.clamav.persistence.enabled }}
 apiVersion: v1
