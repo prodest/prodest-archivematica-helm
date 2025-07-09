@@ -93,6 +93,7 @@ As principais opções de configuração estão disponíveis no arquivo `values.
 
 *   **Security Context Constraints (SCCs):** OpenShift usa SCCs para controlar permissões de pods. Este chart tenta ser compatível definindo `securityContext` nos pods e oferecendo a opção de usar SCCs existentes ou uma personalizada. A SCC `anyuid` pode ser necessária, mas requer privilégios. Teste cuidadosamente no seu ambiente.
 *   **UIDs:** O `general.user_uid` é usado para definir `runAsUser`, `runAsGroup` e `fsGroup`. Certifique-se de que este UID esteja dentro do intervalo permitido para o ServiceAccount no seu namespace OpenShift.
+*   **SA ARGOCD responsável por controllers:** A SA `argocd-argocd-application-controller` deve ter permissão para criar `RBAC` no cluster.
 *   **Routes:** O chart cria Routes do OpenShift para expor os serviços web (Dashboard, Storage Service) se `route.enabled` for `true`.
 *   **Persistência:** Certifique-se de que os StorageClasses e AccessModes definidos para os PVCs sejam suportados pelo seu cluster OpenShift e pela infraestrutura de armazenamento subjacente.
 *   **Elasticsearch `vm.max_map_count`:** Elasticsearch requer um valor alto para `vm.max_map_count`. O chart inclui um `initContainer` privilegiado para tentar definir isso. Se `initContainers` privilegiados não forem permitidos pela sua SCC, você precisará configurar `vm.max_map_count` no nível do nó do OpenShift (por exemplo, usando MachineConfig).
