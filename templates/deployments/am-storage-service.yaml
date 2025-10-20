@@ -32,7 +32,7 @@ spec:
       labels:
         {{- include "archivematica.component.selectorLabels" (list . "storage-service") | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "archivematica.serviceAccountName" . }}
+      serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
       securityContext:
         fsGroup: {{ .Values.general.user_uid }}
         runAsUser: {{ .Values.general.user_uid }}
