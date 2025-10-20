@@ -62,9 +62,9 @@ spec:
                   key: SSDB_URL
             {{- end }}
             - name: SS_GUNICORN_USER
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             - name: SS_GUNICORN_GROUP
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
         - name: archivematica-storage-service-create-user
           image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
           imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
@@ -97,9 +97,9 @@ spec:
                   name: {{ include "archivematica.fullname" . }}-mysql-secrets
                   key: SSDB_URL
             - name: SS_GUNICORN_USER
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             - name: SS_GUNICORN_GROUP
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             {{- end }}
       containers:
         - name: storage-service
@@ -131,9 +131,9 @@ spec:
                   key: SSDB_URL
             {{- end }}
             - name: SS_GUNICORN_USER
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             - name: SS_GUNICORN_GROUP
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
           volumeMounts:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory

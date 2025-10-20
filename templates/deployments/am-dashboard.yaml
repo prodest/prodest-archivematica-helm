@@ -58,9 +58,9 @@ spec:
               value: "{{ include "archivematica.fullname" . }}-mysql"
             {{- end }}
             - name: AM_GUNICORN_USER
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             - name: AM_GUNICORN_GROUP
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
       containers:
         - name: dashboard
           image: "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
@@ -92,9 +92,9 @@ spec:
               value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
             {{- end }}
             - name: AM_GUNICORN_USER
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
             - name: AM_GUNICORN_GROUP
-              value: {{ .Values.general.user_uid | quote }}
+              value: "1000"
           volumeMounts:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory
