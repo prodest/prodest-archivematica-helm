@@ -33,21 +33,10 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "storage-service") | nindent 8 }}
     spec:
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
-      securityContext:
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
       initContainers:
         - name: storage-service-migrations
           image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
           imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           command: ["sh"]
           args: ["-c", "python /src/storage_service/manage.py migrate --noinput"]
           envFrom:
@@ -79,13 +68,6 @@ spec:
         - name: archivematica-storage-service-create-user
           image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
           imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           command: ["sh"]
           args: ["-c",'python /src/storage_service/manage.py create_user --username=$(AM_SS_USERNAME) --password=$(AM_SS_PASSWORD) --email=$(AM_SS_EMAIL) --api-key=$(AM_SS_API_KEY) --superuser ']
           envFrom:
@@ -123,13 +105,6 @@ spec:
         - name: storage-service
           image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
           imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           ports:
             - containerPort: 8002
               name: http

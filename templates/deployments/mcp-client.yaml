@@ -17,21 +17,10 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "mcp-client") | nindent 8 }}
     spec:
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
-      securityContext:
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
       containers:
         - name: mcp-client
           image: "{{ .Values.mcp_client.image.repository }}:{{ .Values.mcp_client.image.tag }}"
           imagePullPolicy: {{ .Values.mcp_client.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           envFrom:
             - secretRef:
                 name: {{ include "archivematica.fullname" . }}-secrets

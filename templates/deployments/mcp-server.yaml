@@ -35,20 +35,10 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "mcp-server") | nindent 8 }}
     spec:
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
       containers:
         - name: mcp-server
           image: "{{ .Values.mcp_server.image.repository }}:{{ .Values.mcp_server.image.tag }}"
           imagePullPolicy: {{ .Values.mcp_server.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           ports:
             - containerPort: 8000 # Porta interna do MCP Server
               name: http

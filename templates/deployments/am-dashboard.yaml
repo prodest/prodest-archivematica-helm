@@ -33,16 +33,9 @@ spec:
         {{- include "archivematica.component.selectorLabels" (list . "dashboard") | nindent 8 }}
     spec:
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
-      securityContext:
-        fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
       initContainers:
         - name: archivematica-dashboard-migration
           image:  "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
           command: ["sh"]
           args: ["-c", "python /src/src/dashboard/src/manage.py migrate --noinput"]
           envFrom:
@@ -72,13 +65,6 @@ spec:
         - name: dashboard
           image: "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
           imagePullPolicy: {{ .Values.archivematica_dashboard.image.pullPolicy }}
-          securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-              - ALL
           ports:
             - containerPort: 8001
               name: http
