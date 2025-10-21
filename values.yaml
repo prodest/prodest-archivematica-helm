@@ -131,7 +131,7 @@ route:
   enabled: true
   tls: true
   hostname: "archivematica.k8s-npr.es.gov.br"
-  ss_hostname: "archivematica-dash.k8s-npr.es.gov.br"
+  ss_hostname: "archivematica-ss.k8s-npr.es.gov.br"
 
 
 ################################################################################
