@@ -36,8 +36,8 @@ spec:
       serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
       securityContext:
         fsGroup: {{ .Values.general.user_uid }}
-        runAsUser: {{ .Values.general.user_uid }}
-        runAsGroup: {{ .Values.general.user_uid }}
+        runAsUser: 1000
+        runAsGroup: 1000
       # Init container to update ClamAV database on startup
       initContainers:
       - name: freshclam-init
@@ -53,8 +53,8 @@ spec:
           name: freshclam-config-volume
           subPath: freshclam.conf
         securityContext:
-          runAsUser: {{ .Values.general.user_uid }}
-          runAsGroup: {{ .Values.general.user_uid }}
+          runAsUser: 1000
+          runAsGroup: 1000
       #   - name: clamav-log
       #     mountPath: /var/log/clamav
       # #   - name: clamav-run
@@ -91,8 +91,8 @@ spec:
             - name: pipeline-data
               mountPath: /var/archivematica/sharedDirectory
           securityContext:
-            runAsUser: {{ .Values.general.user_uid }}
-            runAsGroup: {{ .Values.general.user_uid }}
+            runAsUser: 1000
+            runAsGroup: 1000
           # Liveness and Readiness probes are recommended
           # livenessProbe:
           #   tcpSocket:
