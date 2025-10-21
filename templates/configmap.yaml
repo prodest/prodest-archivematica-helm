@@ -71,7 +71,7 @@ data:
     TCPSocket 3310
     Foreground yes
     #FixStaleSocket yes
-    User {{ .Values.general.user_uid }}
+    User 1000
     ScanPDF yes
     ScanHTML yes
     ScanMail yes
@@ -84,7 +84,7 @@ data:
   freshclam.conf: |
     DatabaseDirectory /var/lib/clamav
     #AllowSupplementaryGroups yes
-    DatabaseOwner {{ .Values.general.user_uid }}
+    DatabaseOwner 1000
     DatabaseMirror database.clamav.net
 ---
 apiVersion: v1
