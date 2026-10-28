@@ -1,0 +1,123 @@
+{{- if .Values.archivematica_dashboard.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.fullname" . }}-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "dashboard") | nindent 4 }}
+spec:
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "dashboard") | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.fullname" . }}-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "dashboard") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "dashboard") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "dashboard") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
+      initContainers:
+        - name: archivematica-dashboard-migration
+          image:  "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
+          command: ["sh"]
+          args: ["-c", "python /src/src/dashboard/src/manage.py migrate --noinput"]
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.archivematica_dashboard.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            {{- end }}
+            - name: AM_GUNICORN_USER
+              value: "1000"
+            - name: AM_GUNICORN_GROUP
+              value: "1000"
+      containers:
+        - name: dashboard
+          image: "{{ .Values.archivematica_dashboard.image.repository }}:{{ .Values.archivematica_dashboard.image.tag }}"
+          imagePullPolicy: {{ .Values.archivematica_dashboard.image.pullPolicy }}
+          ports:
+            - containerPort: 8001
+              name: http
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.archivematica_dashboard.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_DASHBOARD_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            {{- end }}
+            {{- if .Values.gearmand.enabled }}
+            - name: ARCHIVEMATICA_DASHBOARD_DASHBOARD_GEARMAN_SERVER
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+            {{- end }}
+            - name: AM_GUNICORN_USER
+              value: "1000"
+            - name: AM_GUNICORN_GROUP
+              value: "1000"
+          volumeMounts:
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+            - name: transfer-share
+              mountPath: /home/transfer
+          # Liveness and Readiness probes são recomendadas
+          # livenessProbe:
+          #   httpGet:
+          #     path: /administration/accounts/login/
+          #     port: http
+          #   initialDelaySeconds: 30
+          #   timeoutSeconds: 5
+          # readinessProbe:
+          #   httpGet:
+          #     path: /administration/accounts/login/
+          #     port: http
+          #   initialDelaySeconds: 5
+          #   timeoutSeconds: 1
+      volumes:
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+        - name: transfer-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-transfer-share
+{{- end }}

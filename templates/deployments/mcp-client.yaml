@@ -1,0 +1,94 @@
+{{- if .Values.mcp_client.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.fullname" . }}-mcp-client
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "mcp-client") | nindent 4 }}
+spec:
+  replicas: {{ .Values.mcp_client.replicas }}
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "mcp-client") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "mcp-client") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
+      containers:
+        - name: mcp-client
+          image: "{{ .Values.mcp_client.image.repository }}:{{ .Values.mcp_client.image.tag }}"
+          imagePullPolicy: {{ .Values.mcp_client.image.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.mcp_client.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_USER
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: MYSQL_PASSWORD
+            - name: ARCHIVEMATICA_MCPCLIENT_CLIENT_HOST
+              value: "{{ include "archivematica.fullname" . }}-mysql"
+            {{- end }}
+            {{- if .Values.gearmand.enabled }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_MCPARCHIVEMATICASERVER
+              value: "{{ include "archivematica.fullname" . }}-gearmand:4730"
+            {{- end }}
+            {{- if .Values.clamav.enabled }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_SERVER
+              value: "{{ include "archivematica.fullname" . }}-clamav:3310"
+            {{- end }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_FILE_SIZE
+              value: {{ .Values.clamav.max_file_size | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_SCAN_SIZE
+              value: {{ .Values.clamav.max_scan_size | quote }}
+            - name: ARCHIVEMATICA_MCPCLIENT_MCPCLIENT_CLAMAV_CLIENT_MAX_STREAM_LENGTH
+              value: {{ .Values.clamav.max_stream_length | quote }}
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-secrets
+                  key: DJANGO_SECRET_KEY
+          volumeMounts:
+            # Montar volumes compartilhados necessários
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+            - name: transfer-share
+              mountPath: /home/transfer
+            # - name: staging-data
+            #   mountPath: /var/archivematica/storage_service # Verificar caminho correto
+            # - name: location-data
+            #   mountPath: /home # Verificar caminho correto
+            # - name: storage-share
+            #   mountPath: /data/storage # Verificar caminho correto
+          resources:
+            {{- toYaml .Values.mcp_client.resources | nindent 12 }}
+          # Liveness and Readiness probes são recomendadas
+      volumes:
+        # Definir volumes compartilhados
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+        - name: transfer-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-transfer-share
+        - name: staging-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-staging-data
+        - name: location-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-location-data
+        - name: storage-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-storage-share
+{{- end }}

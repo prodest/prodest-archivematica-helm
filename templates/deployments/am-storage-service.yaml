@@ -1,0 +1,178 @@
+{{- if .Values.archivematica_storage_service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "archivematica.fullname" . }}-storage-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "storage-service") | nindent 4 }}
+spec:
+  ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "archivematica.component.selectorLabels" (list . "storage-service") | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "archivematica.fullname" . }}-storage-service
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "archivematica.component.labels" (list . "storage-service") | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "archivematica.component.selectorLabels" (list . "storage-service") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "archivematica.component.selectorLabels" (list . "storage-service") | nindent 8 }}
+    spec:
+      serviceAccountName: {{ .Values.security.serviceAccountAnyUID.name }}
+      initContainers:
+        - name: storage-service-migrations
+          image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
+          imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
+          command: ["sh"]
+          args: ["-c", "python /src/storage_service/manage.py migrate --noinput"]
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.archivematica_storage_service.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
+            - name: SS_DB_NAME
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: SSDB_URL
+            {{- end }}
+            - name: SS_GUNICORN_USER
+              value: "1000"
+            - name: SS_GUNICORN_GROUP
+              value: "1000"
+        - name: archivematica-storage-service-create-user
+          image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
+          imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
+          command: ["sh"]
+          args: ["-c",'python /src/storage_service/manage.py create_user --username=$(AM_SS_USERNAME) --password=$(AM_SS_PASSWORD) --email=$(AM_SS_EMAIL) --api-key=$(AM_SS_API_KEY) --superuser ']
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          # envFrom:
+          #   - configMapRef:
+          #       name: {{ include "archivematica.fullname" . }}-env
+          #   - secretRef:
+          #       name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.archivematica_storage_service.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
+            - name: SS_DB_NAME
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: SSDB_URL
+            - name: SS_GUNICORN_USER
+              value: "1000"
+            - name: SS_GUNICORN_GROUP
+              value: "1000"
+            {{- end }}
+      containers:
+        - name: storage-service
+          image: "{{ .Values.archivematica_storage_service.image.repository }}:{{ .Values.archivematica_storage_service.image.tag }}"
+          imagePullPolicy: {{ .Values.archivematica_storage_service.image.pullPolicy }}
+          ports:
+            - containerPort: 8002
+              name: http
+          envFrom:
+            - secretRef:
+                name: {{ include "archivematica.fullname" . }}-secrets
+          env:
+            {{- toYaml .Values.archivematica_storage_service.env | nindent 12 }}
+            {{- if .Values.mysql.enabled }}
+            - name: SS_DB_USER
+              value: {{ .Values.mysql.db.user | quote }}
+            - name: SS_DB_PASSWORD
+              value: {{ .Values.mysql.db.password | quote }}
+            - name: SS_DB_HOST
+              value: {{ include "archivematica.fullname" . }}-mysql
+            - name: SS_DB_PORT
+              value: "3306"
+            - name: SS_DB_NAME
+              value: "SS" # {{ .Values.mysql.db.name | quote }}
+            - name: SS_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "archivematica.fullname" . }}-mysql-secrets
+                  key: SSDB_URL
+            {{- end }}
+            - name: SS_GUNICORN_USER
+              value: "1000"
+            - name: SS_GUNICORN_GROUP
+              value: "1000"
+          volumeMounts:
+            - name: pipeline-data
+              mountPath: /var/archivematica/sharedDirectory
+            - name: staging-data
+              mountPath: /var/archivematica/storage_service
+            - name: location-data
+              mountPath: /home
+              subPath: sips
+            - name: transfer-share
+              mountPath: /home/transfer
+            - name: storage-share
+              mountPath: /data/storage
+          # Liveness and Readiness probes são recomendadas
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 30
+          #   timeoutSeconds: 5
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          #   initialDelaySeconds: 5
+          #   timeoutSeconds: 1
+      volumes:
+        - name: pipeline-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-pipeline-data
+        - name: staging-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-staging-data
+        - name: location-data
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-location-data
+        - name: transfer-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-transfer-share
+        - name: storage-share
+          persistentVolumeClaim:
+            claimName: {{ include "archivematica.fullname" . }}-storage-share
+{{- end }}
